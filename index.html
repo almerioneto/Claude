@@ -109,6 +109,13 @@
   .car .grid { grid-template-columns: 1fr 1fr; }
   .car .full { grid-column: 1 / -1; }
   .hide { display: none !important; }
+  .info { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; }
+  .info:empty { display: none; }
+  .info span {
+    font-size: 0.75rem; color: var(--text-secondary); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px;
+  }
+  optgroup { font-style: normal; font-weight: 700; }
 
   .summary { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .sum {
@@ -313,25 +320,51 @@
     OUTRO: { nome: "Outro / personalizado", a: [3, 3, 3] }
   };
 
-  // Modelos de exemplo (valores aproximados). Consumo em km/l (gasolina) e km/kWh.
+  // Modelos de exemplo (valores aproximados, referência 2026). Consumo em km/l (gasolina) e km/kWh.
+  // aut = autonomia total do elétrico (km, PBEV); autEle = autonomia só no modo elétrico do plug-in (km).
   const PRESETS = {
     comb: [
-      { nome: "Toyota Corolla 2.0 flex", preco: 165000, comb: "gasolina", cid: 11.2, est: 13.6, manut: 1800, seguro: 5500 },
-      { nome: "Volkswagen Polo 1.0 TSI", preco: 115000, comb: "gasolina", cid: 12.5, est: 14.6, manut: 1500, seguro: 4200 },
-      { nome: "Jeep Compass 1.3 T270", preco: 200000, comb: "gasolina", cid: 10.1, est: 11.9, manut: 2200, seguro: 6500 },
-      { nome: "Hyundai HB20 1.0", preco: 90000, comb: "gasolina", cid: 13.0, est: 15.2, manut: 1200, seguro: 3500 }
+      { g: "Hatch", nome: "Hyundai HB20 1.0", preco: 90000, cid: 13.0, est: 15.2, manut: 1200, seguro: 3500 },
+      { g: "Hatch", nome: "Volkswagen Polo 1.0 TSI", preco: 115000, cid: 12.5, est: 14.6, manut: 1500, seguro: 4200 },
+      { g: "Sedã", nome: "Toyota Corolla 2.0 flex", preco: 165000, cid: 11.2, est: 13.6, manut: 1800, seguro: 5500 },
+      { g: "SUV", nome: "Jeep Compass 1.3 T270", preco: 200000, cid: 10.1, est: 11.9, manut: 2200, seguro: 6500 }
     ],
     hib: [
-      { nome: "Toyota Corolla Cross Hybrid (HEV)", preco: 195000, tipoH: "hev", comb: "gasolina", cid: 17.8, est: 15.5, pctEle: 0, kmkwhCid: 6, kmkwhEst: 5, manut: 1900, seguro: 6200 },
-      { nome: "Toyota Corolla Hybrid (HEV)", preco: 185000, tipoH: "hev", comb: "gasolina", cid: 18.9, est: 16.5, pctEle: 0, kmkwhCid: 6, kmkwhEst: 5, manut: 1900, seguro: 5900 },
-      { nome: "BYD Song Pro (PHEV)", preco: 190000, tipoH: "phev", comb: "gasolina", cid: 14.5, est: 13.5, pctEle: 70, kmkwhCid: 5.8, kmkwhEst: 5.0, manut: 1200, seguro: 6800 },
-      { nome: "BYD King (PHEV)", preco: 180000, tipoH: "phev", comb: "gasolina", cid: 16.0, est: 15.0, pctEle: 70, kmkwhCid: 6.5, kmkwhEst: 5.5, manut: 1200, seguro: 6000 }
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Corolla Hybrid", preco: 185000, tipoH: "hev", cid: 18.9, est: 16.5, manut: 1900, seguro: 5900 },
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Corolla Cross Hybrid", preco: 195000, tipoH: "hev", cid: 17.8, est: 15.5, manut: 1900, seguro: 6200 },
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Yaris Cross Hybrid", preco: 165000, tipoH: "hev", cid: 18.5, est: 16.4, manut: 1800, seguro: 5400 },
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Honda Civic e:HEV", preco: 265000, tipoH: "hev", cid: 21.0, est: 17.5, manut: 2000, seguro: 7800 },
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota RAV4 Hybrid", preco: 330000, tipoH: "hev", cid: 15.0, est: 13.5, manut: 2300, seguro: 9500 },
+      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "GWM Haval H6 HEV", preco: 220000, tipoH: "hev", cid: 14.0, est: 12.5, manut: 1800, seguro: 7000 },
+      { g: "Híbrido leve (MHEV) — economia pequena", nome: "Fiat Pulse Hybrid 1.0", preco: 130000, tipoH: "hev", cid: 12.3, est: 14.0, manut: 1500, seguro: 4500 },
+      { g: "Híbrido leve (MHEV) — economia pequena", nome: "Fiat Fastback Hybrid 1.0", preco: 145000, tipoH: "hev", cid: 12.2, est: 14.0, manut: 1500, seguro: 4800 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD King DM-i", preco: 180000, tipoH: "phev", cid: 16.0, est: 15.0, kmkwhCid: 6.5, kmkwhEst: 5.5, autEle: 80, manut: 1200, seguro: 6000 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Song Pro DM-i", preco: 190000, tipoH: "phev", cid: 14.5, est: 13.5, kmkwhCid: 5.8, kmkwhEst: 5.0, autEle: 71, manut: 1200, seguro: 6800 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Song Plus DM-i", preco: 230000, tipoH: "phev", cid: 14.0, est: 13.0, kmkwhCid: 5.3, kmkwhEst: 4.6, autEle: 80, manut: 1300, seguro: 7600 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "Caoa Chery Tiggo 7 PHEV", preco: 190000, tipoH: "phev", cid: 15.0, est: 14.0, kmkwhCid: 5.5, kmkwhEst: 4.6, autEle: 75, manut: 1500, seguro: 6500 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "GWM Haval H6 PHEV", preco: 260000, tipoH: "phev", cid: 13.0, est: 12.0, kmkwhCid: 5.0, kmkwhEst: 4.3, autEle: 105, manut: 1800, seguro: 8200 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Shark (picape)", preco: 380000, tipoH: "phev", cid: 11.0, est: 10.0, kmkwhCid: 4.0, kmkwhEst: 3.5, autEle: 60, manut: 1800, seguro: 11000 },
+      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "Volvo XC60 T8", preco: 430000, tipoH: "phev", cid: 12.0, est: 11.0, kmkwhCid: 4.5, kmkwhEst: 3.9, autEle: 55, manut: 2800, seguro: 13000 }
     ],
     ele: [
-      { nome: "BYD Dolphin", preco: 150000, cid: 6.6, est: 5.6, manut: 800, seguro: 5800 },
-      { nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, manut: 700, seguro: 4800 },
-      { nome: "GWM Ora 03", preco: 150000, cid: 6.4, est: 5.4, manut: 800, seguro: 5800 },
-      { nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, manut: 700, seguro: 4000 }
+      { g: "Compactos e urbanos", nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, aut: 180, manut: 700, seguro: 4000 },
+      { g: "Compactos e urbanos", nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, aut: 280, manut: 700, seguro: 4800 },
+      { g: "Compactos e urbanos", nome: "Caoa Chery iCar", preco: 120000, cid: 7.5, est: 6.2, aut: 280, manut: 700, seguro: 4800 },
+      { g: "Compactos e urbanos", nome: "JAC E-JS1", preco: 130000, cid: 7.7, est: 6.4, aut: 180, manut: 800, seguro: 4800 },
+      { g: "Hatches médios", nome: "BYD Dolphin", preco: 150000, cid: 6.6, est: 5.6, aut: 290, manut: 800, seguro: 5800 },
+      { g: "Hatches médios", nome: "GWM Ora 03", preco: 150000, cid: 6.4, est: 5.4, aut: 230, manut: 800, seguro: 5800 },
+      { g: "Hatches médios", nome: "Fiat 500e", preco: 200000, cid: 7.0, est: 5.8, aut: 227, manut: 900, seguro: 6500 },
+      { g: "SUVs", nome: "Chevrolet Spark EUV", preco: 160000, cid: 6.6, est: 5.4, aut: 258, manut: 800, seguro: 6000 },
+      { g: "SUVs", nome: "BYD Yuan Pro", preco: 190000, cid: 6.3, est: 5.3, aut: 250, manut: 900, seguro: 6800 },
+      { g: "SUVs", nome: "Leapmotor C10", preco: 190000, cid: 6.0, est: 5.0, aut: 338, manut: 900, seguro: 6800 },
+      { g: "SUVs", nome: "Geely EX5", preco: 200000, cid: 6.2, est: 5.1, aut: 335, manut: 900, seguro: 7000 },
+      { g: "SUVs", nome: "Chevrolet Captiva EV", preco: 200000, cid: 6.0, est: 5.0, aut: 304, manut: 900, seguro: 7000 },
+      { g: "SUVs", nome: "Peugeot e-2008", preco: 200000, cid: 6.4, est: 5.3, aut: 261, manut: 1000, seguro: 7000 },
+      { g: "SUVs", nome: "Volvo EX30", preco: 230000, cid: 6.5, est: 5.4, aut: 250, manut: 1000, seguro: 8000 },
+      { g: "SUVs", nome: "BYD Yuan Plus", preco: 235000, cid: 6.0, est: 5.0, aut: 294, manut: 1000, seguro: 8000 },
+      { g: "Sedãs e premium", nome: "Renault Megane E-Tech", preco: 280000, cid: 6.2, est: 5.2, aut: 337, manut: 1100, seguro: 9000 },
+      { g: "Sedãs e premium", nome: "BYD Seal", preco: 300000, cid: 6.2, est: 5.4, aut: 372, manut: 1100, seguro: 10000 },
+      { g: "Sedãs e premium", nome: "BMW iX1", preco: 300000, cid: 5.8, est: 4.9, aut: 314, manut: 1500, seguro: 11000 }
     ]
   };
 
@@ -350,6 +383,7 @@
   const brl2 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const n0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
   const n1 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+  const precoCurto = (v) => v >= 1e6 ? `~R$ ${n1.format(v / 1e6)} mi` : `~R$ ${n0.format(v / 1e3)} mil`;
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   function el(tag, attrs, ...children) {
     const e = document.createElement(tag);
@@ -388,9 +422,14 @@
 
     const g = el("div", { class: "grid" });
     const presetSel = el("select", { "data-k": "preset" });
-    presetSel.append(el("option", { value: "", text: "— digitar meus dados —" }));
-    PRESETS[t.id].forEach((p, i) => presetSel.append(el("option", { value: String(i), text: p.nome })));
-    g.append(field("Modelo de exemplo", "", presetSel, "full"));
+    presetSel.append(el("option", { value: "", text: "✎ Digitar os dados do meu carro" }));
+    const grupos = {};
+    PRESETS[t.id].forEach(p => { if (!grupos[p.g]) { grupos[p.g] = el("optgroup", { label: p.g }); presetSel.append(grupos[p.g]); } });
+    PRESETS[t.id].map((p, i) => [p, i]).sort((a, b) => a[0].preco - b[0].preco).forEach(([p, i]) => {
+      grupos[p.g].append(el("option", { value: String(i), text: `${p.nome} · ${precoCurto(p.preco)}` }));
+    });
+    g.append(field("Escolha o modelo", `${PRESETS[t.id].length} opções`, presetSel, "full"));
+    g.append(el("div", { class: "info full", "data-info": "" }));
 
     const nome = el("input", { type: "text", "data-k": "nome", placeholder: "Ex.: meu carro" });
     g.append(field("Nome do carro", "", nome, "full"));
@@ -399,8 +438,8 @@
 
     if (t.id === "hib") {
       const th = el("select", { "data-k": "tipoH" });
-      th.append(el("option", { value: "hev", text: "Híbrido convencional (HEV) — não carrega na tomada" }));
-      th.append(el("option", { value: "phev", text: "Híbrido plug-in (PHEV) — carrega na tomada" }));
+      th.append(el("option", { value: "hev", text: "Convencional ou leve (HEV/MHEV)" }));
+      th.append(el("option", { value: "phev", text: "Plug-in (PHEV)" }));
       g.append(field("Tipo de híbrido", "", th, "full"));
     }
 
@@ -414,8 +453,9 @@
     }
 
     if (t.id === "hib") {
-      const pe = field("% dos km no modo elétrico", "PHEV", inNum("pctEle", 0, 5, 0, 100), "full phev");
+      const pe = field("% dos km no modo elétrico", "estimado pela autonomia elétrica e seu trajeto; pode editar", inNum("pctEle", 0, 5, 0, 100), "full phev");
       g.append(pe);
+      g.append(field("Autonomia só elétrica", "km", inNum("autEle", 60, 5, 0), "full phev"));
       g.append(field("Elétrico cidade", "km/kWh", inNum("kmkwhCid", 6, 0.1, 0.1), "phev"));
       g.append(field("Elétrico estrada", "km/kWh", inNum("kmkwhEst", 5, 0.1, 0.1), "phev"));
     }
@@ -440,6 +480,8 @@
     card.addEventListener("input", (ev) => {
       const k = ev.target.dataset.k;
       if (k && k !== "preset" && k !== "comb" && k !== "tipoH") presetSel.value = "";
+      if (k === "pctEle") card.dataset.pctManual = "1";
+      if (k === "autEle") delete card.dataset.pctManual;
     });
     const combSel = card.querySelector('[data-k="comb"]');
     if (combSel) combSel.addEventListener("change", () => {
@@ -462,7 +504,11 @@
     const c = carEls[t.id];
     setK(c, "nome", p.nome); setK(c, "preco", p.preco);
     setK(c, "manut", p.manut); setK(c, "seguro", p.seguro);
-    if (t.id === "hib") { setK(c, "tipoH", p.tipoH); setK(c, "pctEle", p.pctEle); setK(c, "kmkwhCid", p.kmkwhCid); setK(c, "kmkwhEst", p.kmkwhEst); }
+    if (t.id === "hib") {
+      setK(c, "tipoH", p.tipoH);
+      if (p.tipoH === "phev") { setK(c, "kmkwhCid", p.kmkwhCid); setK(c, "kmkwhEst", p.kmkwhEst); setK(c, "autEle", p.autEle); }
+      delete c.dataset.pctManual;
+    }
     if (t.id !== "ele") {
       const combSel = getK(c, "comb");
       combSel.value = "gasolina"; combSel.dataset.prev = "gasolina";
@@ -475,6 +521,39 @@
     const c = carEls.hib;
     const isPhev = getK(c, "tipoH").value === "phev";
     c.querySelectorAll(".phev").forEach(e => e.classList.toggle("hide", !isPhev));
+  }
+
+  // % dos km em modo elétrico para um PHEV carregado todo dia: cobre o trajeto diário até ~90% da autonomia elétrica.
+  function estimarPctEle(autEle) {
+    const kmDia = num($("kmDia")), dias = num($("diasMes")), kmMes = kmDia * dias + num($("kmExtra"));
+    if (kmMes <= 0 || autEle <= 0) return 0;
+    return Math.round(Math.min(kmDia, autEle * 0.9) * dias / kmMes * 100);
+  }
+
+  function atualizarInfo() {
+    TIPOS.forEach(t => {
+      const c = carEls[t.id], box = c.querySelector("[data-info]");
+      const sel = getK(c, "preset");
+      const p = sel.value !== "" ? PRESETS[t.id][+sel.value] : null;
+      const chips = [];
+      if (t.id === "hib") {
+        const phev = getK(c, "tipoH").value === "phev";
+        if (phev) {
+          const aut = num(getK(c, "autEle"));
+          if (!c.dataset.pctManual) setK(c, "pctEle", estimarPctEle(aut));
+          chips.push("Plug-in: carrega na tomada");
+          if (aut > 0) chips.push(`${n0.format(aut)} km só no elétrico`);
+          chips.push(`${n0.format(num(getK(c, "pctEle")))}% do seu trajeto no elétrico`);
+        } else {
+          chips.push(p && /MHEV/.test(p.g) ? "Híbrido leve: não roda só no elétrico" : "Recarrega sozinho, não vai na tomada");
+        }
+      }
+      if (t.id === "ele" && p) chips.push(`Autonomia ≈ ${n0.format(p.aut)} km`);
+      if (p) chips.push(`Preço ≈ ${brl.format(p.preco)}`);
+      else chips.push("Dados digitados por você");
+      box.textContent = "";
+      chips.forEach(txt => box.append(el("span", { text: txt })));
+    });
   }
 
   function aplicarIpvaUF() {
@@ -773,12 +852,12 @@
   function trunc(s, n) { return s.length > n ? s.slice(0, Math.max(3, n - 1)) + "…" : s; }
 
   // ---------- Persistência local (conveniência) ----------
-  const STORE = "comparador-carros-v1";
+  const STORE = "comparador-carros-v2";
   function salvar() {
     try {
       const data = { global: {}, cars: {} };
       document.querySelectorAll("section.card input[id], section.card select[id]").forEach(i => { data.global[i.id] = i.type === "checkbox" ? i.checked : i.value; });
-      TIPOS.forEach(t => { data.cars[t.id] = {}; carEls[t.id].querySelectorAll("[data-k]").forEach(i => { data.cars[t.id][i.dataset.k] = i.value; }); });
+      TIPOS.forEach(t => { data.cars[t.id] = {}; carEls[t.id].querySelectorAll("[data-k]").forEach(i => { data.cars[t.id][i.dataset.k] = i.value; }); data.cars[t.id]._manual = carEls[t.id].dataset.pctManual || ""; });
       localStorage.setItem(STORE, JSON.stringify(data));
     } catch (e) { /* armazenamento indisponível */ }
   }
@@ -789,6 +868,7 @@
       const data = JSON.parse(raw);
       Object.entries(data.global || {}).forEach(([id, v]) => { const i = $(id); if (i) { if (i.type === "checkbox") i.checked = !!v; else i.value = v; } });
       TIPOS.forEach(t => Object.entries((data.cars || {})[t.id] || {}).forEach(([k, v]) => {
+        if (k === "_manual") { if (v) carEls[t.id].dataset.pctManual = "1"; return; }
         const i = getK(carEls[t.id], k); if (i) { i.value = v; if (k === "comb") i.dataset.prev = v; }
       }));
       return true;
@@ -797,6 +877,7 @@
 
   // ---------- Ciclo ----------
   function calcular() {
+    atualizarInfo();
     const g = ler();
     const rs = TIPOS.map(t => calcCarro(t, g));
     render(g, rs);
@@ -804,9 +885,11 @@
   }
 
   if (!restaurar()) {
-    getK(carEls.comb, "preset").value = "0"; aplicarPreset(TIPOS[0], PRESETS.comb[0]);
-    getK(carEls.hib, "preset").value = "0"; aplicarPreset(TIPOS[1], PRESETS.hib[0]);
-    getK(carEls.ele, "preset").value = "0"; aplicarPreset(TIPOS[2], PRESETS.ele[0]);
+    const padrao = { comb: "Toyota Corolla 2.0 flex", hib: "Toyota Corolla Cross Hybrid", ele: "BYD Dolphin" };
+    TIPOS.forEach(t => {
+      const i = PRESETS[t.id].findIndex(p => p.nome === padrao[t.id]);
+      getK(carEls[t.id], "preset").value = String(i); aplicarPreset(t, PRESETS[t.id][i]);
+    });
     aplicarIpvaUF();
   }
   atualizarPhev();
