@@ -2,8 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Comparador de Carros</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Compare carro a combustão, híbrido e elétrico: IPVA, combustível, energia e trajeto.">
 <style>
   :root {
@@ -67,7 +68,11 @@
     color: var(--text-primary);
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  .wrap {
+    max-width: 1120px; margin: 0 auto; padding-block: 24px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
   h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; }
   h2 { font-size: 1.15rem; margin: 0 0 12px; }
   h3 { font-size: 1rem; margin: 0; }
@@ -88,7 +93,7 @@
     font: inherit; color: var(--text-primary);
     background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 10px; width: 100%; min-width: 0;
+    padding: 10px 12px; width: 100%; min-width: 0; font-size: 16px; min-height: 44px;
   }
   input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .hint { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
@@ -150,9 +155,30 @@
   .check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px; }
   .check input { width: auto; }
   footer { color: var(--text-muted); font-size: 0.8rem; }
-  @media (max-width: 420px) {
-    .car .grid { grid-template-columns: 1fr; }
+  /* Barra fixa de resultado (celular) */
+  .bar { display: none; }
+  @media (max-width: 760px) {
+    h1 { font-size: 1.35rem; }
+    .grid { grid-template-columns: 1fr 1fr; }
     section.card { padding: 16px; }
+    .bar {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: var(--surface-1); border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,.08);
+      padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+      text-decoration: none; color: inherit;
+    }
+    .bar div { min-width: 0; display: flex; flex-direction: column; align-items: center; }
+    .bar .n { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; max-width: 100%; }
+    .bar .n span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar b { font-size: 1rem; font-variant-numeric: tabular-nums; }
+    .bar b.best { color: var(--good); }
+    .bar small { font-size: 0.68rem; color: var(--text-muted); }
+    .wrap { padding-bottom: 110px; }
+  }
+  @media (max-width: 340px) {
+    .grid, .car .grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -169,55 +195,55 @@
         <select id="uf"></select>
       </label>
       <label class="f">Km rodados por dia útil <span class="u">ida + volta</span>
-        <input type="number" id="kmDia" min="0" step="1" value="40">
+        <input type="number" inputmode="decimal" id="kmDia" min="0" step="1" value="40">
       </label>
       <label class="f">Dias de uso por mês
-        <input type="number" id="diasMes" min="0" max="31" step="1" value="22">
+        <input type="number" inputmode="decimal" id="diasMes" min="0" max="31" step="1" value="22">
       </label>
       <label class="f">Km extras por mês <span class="u">fins de semana, viagens</span>
-        <input type="number" id="kmExtra" min="0" step="10" value="300">
+        <input type="number" inputmode="decimal" id="kmExtra" min="0" step="10" value="300">
       </label>
       <label class="f">% do trajeto na cidade <span class="u">resto = estrada</span>
-        <input type="number" id="pctCidade" min="0" max="100" step="5" value="70">
+        <input type="number" inputmode="decimal" id="pctCidade" min="0" max="100" step="5" value="70">
       </label>
       <label class="f">Período da comparação <span class="u">anos</span>
-        <input type="number" id="anos" min="1" max="15" step="1" value="5">
+        <input type="number" inputmode="decimal" id="anos" min="1" max="15" step="1" value="5">
       </label>
     </div>
 
     <div class="subhead">Combustível</div>
     <div class="grid">
       <label class="f">Gasolina <span class="u">R$/litro</span>
-        <input type="number" id="pGasolina" min="0" step="0.01" value="6.29">
+        <input type="number" inputmode="decimal" id="pGasolina" min="0" step="0.01" value="6.29">
       </label>
       <label class="f">Etanol <span class="u">R$/litro</span>
-        <input type="number" id="pEtanol" min="0" step="0.01" value="4.29">
+        <input type="number" inputmode="decimal" id="pEtanol" min="0" step="0.01" value="4.29">
       </label>
       <label class="f">Diesel <span class="u">R$/litro</span>
-        <input type="number" id="pDiesel" min="0" step="0.01" value="6.09">
+        <input type="number" inputmode="decimal" id="pDiesel" min="0" step="0.01" value="6.09">
       </label>
     </div>
 
     <div class="subhead">Energia elétrica</div>
     <div class="grid">
       <label class="f">Tarifa residencial <span class="u">R$/kWh, com impostos</span>
-        <input type="number" id="pCasa" min="0" step="0.01" value="0.95">
+        <input type="number" inputmode="decimal" id="pCasa" min="0" step="0.01" value="0.95">
       </label>
       <label class="f">Recarga pública/rápida <span class="u">R$/kWh</span>
-        <input type="number" id="pPublica" min="0" step="0.01" value="2.00">
+        <input type="number" inputmode="decimal" id="pPublica" min="0" step="0.01" value="2.00">
       </label>
       <label class="f">% das recargas em casa
-        <input type="number" id="pctCasa" min="0" max="100" step="5" value="85">
+        <input type="number" inputmode="decimal" id="pctCasa" min="0" max="100" step="5" value="85">
       </label>
       <label class="f">Perdas na recarga <span class="u">%</span>
-        <input type="number" id="perdas" min="0" max="40" step="1" value="10">
+        <input type="number" inputmode="decimal" id="perdas" min="0" max="40" step="1" value="10">
       </label>
     </div>
 
     <div class="subhead">IPVA</div>
     <div class="grid">
       <label class="f">Desvalorização anual do carro <span class="u">% (reduz a base do IPVA)</span>
-        <input type="number" id="deprec" min="0" max="40" step="1" value="8">
+        <input type="number" inputmode="decimal" id="deprec" min="0" max="40" step="1" value="8">
       </label>
     </div>
     <p class="hint">As alíquotas de IPVA por estado são uma referência aproximada e mudam com frequência (principalmente as isenções para elétricos e híbridos). Confira na Secretaria da Fazenda do seu estado e ajuste a alíquota de cada carro abaixo, se precisar.</p>
@@ -232,7 +258,7 @@
 
   <!-- 3. Resultado -->
   <section class="card">
-    <h2><span class="step">3</span>Resultado</h2>
+    <h2 id="resultado"><span class="step">3</span>Resultado</h2>
     <p class="hint" id="kmResumo" style="margin:0 0 16px"></p>
     <div class="summary" id="summary"></div>
   </section>
@@ -256,6 +282,8 @@
     <h2>Conclusões</h2>
     <ul class="insights" id="insights"></ul>
   </section>
+
+  <a class="bar" id="bar" href="#resultado" aria-label="Ver resultado"></a>
 
   <footer>Estimativa simplificada. Não considera financiamento, valor de revenda, troca de bateria, pneus ou variação futura de preços. Valores de exemplo aproximados para fins de simulação.</footer>
 </div>
@@ -346,7 +374,7 @@
     return l;
   }
   const inNum = (key, val, step, min, max) => {
-    const i = el("input", { type: "number", "data-k": key, step: String(step || 1), min: String(min ?? 0) });
+    const i = el("input", { type: "number", inputmode: "decimal", "data-k": key, step: String(step || 1), min: String(min ?? 0) });
     if (max != null) i.max = String(max);
     i.value = val;
     return i;
@@ -553,6 +581,16 @@
       if (r.kwhAno > 0) add("kWh por ano", n0.format(r.kwhAno) + " kWh");
       card.append(dl);
       s.append(card);
+    });
+
+    // Barra fixa (celular)
+    const bar = $("bar"); bar.textContent = "";
+    rs.forEach(r => {
+      const d = el("div");
+      d.append(el("span", { class: "n", style: `--c: var(${r.t.cor})` }, el("span", { class: "dot" }), el("span", { text: r.t.rotulo })));
+      d.append(el("b", { class: r.operacional === minOp ? "best" : "", text: brl.format(r.mensal) }));
+      d.append(el("small", { text: "por mês" }));
+      bar.append(d);
     });
 
     // Tabela
