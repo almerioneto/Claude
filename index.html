@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparador de Carros</title>
+<meta name="description" content="Compare carro a combustão, híbrido e elétrico: IPVA, combustível, energia e trajeto.">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3f0;
+    --surface-1: #fcfcfb;
+    --surface-2: #efeee9;
+    --border: #dddbd3;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #7a7973;
+    --grid: #e6e4dd;
+    --accent: #2a78d6;
+    --good: #0c7a3e;
+    --good-bg: #e3f4ea;
+    --car-comb: #eb6834;
+    --car-hib: #2a78d6;
+    --car-ele: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface-1: #1a1a19;
+      --surface-2: #242422;
+      --border: #363633;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #94938b;
+      --grid: #2c2c2a;
+      --accent: #3987e5;
+      --good: #5fd08f;
+      --good-bg: #173324;
+      --car-comb: #d95926;
+      --car-hib: #3987e5;
+      --car-ele: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #242422;
+    --border: #363633;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #94938b;
+    --grid: #2c2c2a;
+    --accent: #3987e5;
+    --good: #5fd08f;
+    --good-bg: #173324;
+    --car-comb: #d95926;
+    --car-hib: #3987e5;
+    --car-ele: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.15rem; margin: 0 0 12px; }
+  h3 { font-size: 1rem; margin: 0; }
+  p.lead { color: var(--text-secondary); margin: 0 0 24px; }
+  section.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .step { color: var(--text-muted); font-weight: 600; margin-right: 6px; }
+  .grid { display: grid; gap: 12px 16px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); }
+  label.f span.u { color: var(--text-muted); font-weight: 400; }
+  label.f > input, label.f > select { margin-top: auto; }
+  input, select {
+    font: inherit; color: var(--text-primary);
+    background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; width: 100%; min-width: 0;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hint { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
+  .subhead { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 18px 0 8px; font-weight: 600; }
+
+  .cars { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .car {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    background: var(--surface-1); border-top: 4px solid var(--c);
+  }
+  .car header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .car .grid { grid-template-columns: 1fr 1fr; }
+  .car .full { grid-column: 1 / -1; }
+  .hide { display: none !important; }
+
+  .summary { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .sum {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px; position: relative;
+  }
+  .sum .name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .sum .type { color: var(--text-muted); font-size: 0.8rem; }
+  .sum .big { font-size: 1.7rem; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .sum .big small { font-size: 0.85rem; font-weight: 400; color: var(--text-secondary); }
+  .sum dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 10px 0 0; font-size: 0.88rem; }
+  .sum dt { color: var(--text-secondary); }
+  .sum dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;
+    color: var(--good); background: var(--good-bg); padding: 2px 8px; border-radius: 999px;
+  }
+
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--text-secondary); font-weight: 600; }
+  tr.total td { font-weight: 700; }
+  td.best { color: var(--good); font-weight: 700; }
+
+  .insights { margin: 0; padding-left: 20px; }
+  .insights li { margin-bottom: 6px; }
+
+  .chart-box { position: relative; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 16px; height: 2px; background: var(--c); display: inline-block; border-radius: 1px; }
+  svg text { fill: var(--text-secondary); font-size: 11px; }
+  .tip {
+    position: absolute; pointer-events: none; background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: 0.82rem; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 170px;
+  }
+  .tip .t { color: var(--text-muted); margin-bottom: 4px; }
+  .tip .r { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  .tip .r b { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .tip .r span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .tip .r i { width: 12px; height: 2px; background: var(--c); display: inline-block; }
+  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .check input { width: auto; }
+  footer { color: var(--text-muted); font-size: 0.8rem; }
+  @media (max-width: 420px) {
+    .car .grid { grid-template-columns: 1fr; }
+    section.card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Comparador: combustão × híbrido × elétrico</h1>
+  <p class="lead">Informe seu trajeto, os preços da sua região e quais carros você quer comparar. O cálculo considera IPVA, combustível, energia elétrica e, opcionalmente, manutenção e seguro.</p>
+
+  <!-- 1. Trajeto e preços -->
+  <section class="card">
+    <h2><span class="step">1</span>Seu trajeto e preços na sua região</h2>
+    <div class="grid">
+      <label class="f">Estado (IPVA)
+        <select id="uf"></select>
+      </label>
+      <label class="f">Km rodados por dia útil <span class="u">ida + volta</span>
+        <input type="number" id="kmDia" min="0" step="1" value="40">
+      </label>
+      <label class="f">Dias de uso por mês
+        <input type="number" id="diasMes" min="0" max="31" step="1" value="22">
+      </label>
+      <label class="f">Km extras por mês <span class="u">fins de semana, viagens</span>
+        <input type="number" id="kmExtra" min="0" step="10" value="300">
+      </label>
+      <label class="f">% do trajeto na cidade <span class="u">resto = estrada</span>
+        <input type="number" id="pctCidade" min="0" max="100" step="5" value="70">
+      </label>
+      <label class="f">Período da comparação <span class="u">anos</span>
+        <input type="number" id="anos" min="1" max="15" step="1" value="5">
+      </label>
+    </div>
+
+    <div class="subhead">Combustível</div>
+    <div class="grid">
+      <label class="f">Gasolina <span class="u">R$/litro</span>
+        <input type="number" id="pGasolina" min="0" step="0.01" value="6.29">
+      </label>
+      <label class="f">Etanol <span class="u">R$/litro</span>
+        <input type="number" id="pEtanol" min="0" step="0.01" value="4.29">
+      </label>
+      <label class="f">Diesel <span class="u">R$/litro</span>
+        <input type="number" id="pDiesel" min="0" step="0.01" value="6.09">
+      </label>
+    </div>
+
+    <div class="subhead">Energia elétrica</div>
+    <div class="grid">
+      <label class="f">Tarifa residencial <span class="u">R$/kWh, com impostos</span>
+        <input type="number" id="pCasa" min="0" step="0.01" value="0.95">
+      </label>
+      <label class="f">Recarga pública/rápida <span class="u">R$/kWh</span>
+        <input type="number" id="pPublica" min="0" step="0.01" value="2.00">
+      </label>
+      <label class="f">% das recargas em casa
+        <input type="number" id="pctCasa" min="0" max="100" step="5" value="85">
+      </label>
+      <label class="f">Perdas na recarga <span class="u">%</span>
+        <input type="number" id="perdas" min="0" max="40" step="1" value="10">
+      </label>
+    </div>
+
+    <div class="subhead">IPVA</div>
+    <div class="grid">
+      <label class="f">Desvalorização anual do carro <span class="u">% (reduz a base do IPVA)</span>
+        <input type="number" id="deprec" min="0" max="40" step="1" value="8">
+      </label>
+    </div>
+    <p class="hint">As alíquotas de IPVA por estado são uma referência aproximada e mudam com frequência (principalmente as isenções para elétricos e híbridos). Confira na Secretaria da Fazenda do seu estado e ajuste a alíquota de cada carro abaixo, se precisar.</p>
+  </section>
+
+  <!-- 2. Carros -->
+  <section class="card">
+    <h2><span class="step">2</span>Quais carros você quer comparar?</h2>
+    <p class="hint" style="margin:0 0 16px">Escolha um modelo de exemplo para preencher os campos ou digite os dados do seu carro. Os números dos exemplos são aproximados — use o preço da tabela FIPE e o consumo do Inmetro (PBEV) do modelo exato.</p>
+    <div class="cars" id="cars"></div>
+  </section>
+
+  <!-- 3. Resultado -->
+  <section class="card">
+    <h2><span class="step">3</span>Resultado</h2>
+    <p class="hint" id="kmResumo" style="margin:0 0 16px"></p>
+    <div class="summary" id="summary"></div>
+  </section>
+
+  <section class="card">
+    <h2>Detalhamento no período</h2>
+    <div class="table-wrap"><table id="tabela"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Custo acumulado ao longo dos anos</h2>
+    <label class="check"><input type="checkbox" id="incluirCompra" checked> Incluir o preço de compra (mostra quando a economia compensa o carro mais caro)</label>
+    <div class="legend" id="legend"></div>
+    <div class="chart-box" id="chartBox">
+      <svg id="chart" width="100%" height="320" role="img" aria-label="Custo acumulado por ano para cada carro"></svg>
+      <div class="tip hide" id="tip"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Conclusões</h2>
+    <ul class="insights" id="insights"></ul>
+  </section>
+
+  <footer>Estimativa simplificada. Não considera financiamento, valor de revenda, troca de bateria, pneus ou variação futura de preços. Valores de exemplo aproximados para fins de simulação.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Dados de referência ----------
+  // Alíquotas de IPVA aproximadas (%): [combustão, híbrido, elétrico]. Ajustáveis por carro.
+  const IPVA_UF = {
+    SP: { nome: "São Paulo", a: [4, 4, 4] },
+    RJ: { nome: "Rio de Janeiro", a: [4, 1.5, 0.5] },
+    MG: { nome: "Minas Gerais", a: [4, 4, 4] },
+    PR: { nome: "Paraná", a: [1.9, 1.9, 1.9] },
+    SC: { nome: "Santa Catarina", a: [2, 2, 2] },
+    RS: { nome: "Rio Grande do Sul", a: [3, 3, 3] },
+    DF: { nome: "Distrito Federal", a: [3.5, 0, 0] },
+    GO: { nome: "Goiás", a: [3.75, 3.75, 3.75] },
+    BA: { nome: "Bahia", a: [2.5, 2.5, 2.5] },
+    PE: { nome: "Pernambuco", a: [2.4, 2.4, 0] },
+    CE: { nome: "Ceará", a: [3, 3, 0] },
+    ES: { nome: "Espírito Santo", a: [2, 2, 2] },
+    MA: { nome: "Maranhão", a: [2.5, 2.5, 0] },
+    RN: { nome: "Rio Grande do Norte", a: [3, 3, 0] },
+    PI: { nome: "Piauí", a: [2.5, 2.5, 0] },
+    OUTRO: { nome: "Outro / personalizado", a: [3, 3, 3] }
+  };
+
+  // Modelos de exemplo (valores aproximados). Consumo em km/l (gasolina) e km/kWh.
+  const PRESETS = {
+    comb: [
+      { nome: "Toyota Corolla 2.0 flex", preco: 165000, comb: "gasolina", cid: 11.2, est: 13.6, manut: 1800, seguro: 5500 },
+      { nome: "Volkswagen Polo 1.0 TSI", preco: 115000, comb: "gasolina", cid: 12.5, est: 14.6, manut: 1500, seguro: 4200 },
+      { nome: "Jeep Compass 1.3 T270", preco: 200000, comb: "gasolina", cid: 10.1, est: 11.9, manut: 2200, seguro: 6500 },
+      { nome: "Hyundai HB20 1.0", preco: 90000, comb: "gasolina", cid: 13.0, est: 15.2, manut: 1200, seguro: 3500 }
+    ],
+    hib: [
+      { nome: "Toyota Corolla Cross Hybrid (HEV)", preco: 195000, tipoH: "hev", comb: "gasolina", cid: 17.8, est: 15.5, pctEle: 0, kmkwhCid: 6, kmkwhEst: 5, manut: 1900, seguro: 6200 },
+      { nome: "Toyota Corolla Hybrid (HEV)", preco: 185000, tipoH: "hev", comb: "gasolina", cid: 18.9, est: 16.5, pctEle: 0, kmkwhCid: 6, kmkwhEst: 5, manut: 1900, seguro: 5900 },
+      { nome: "BYD Song Pro (PHEV)", preco: 190000, tipoH: "phev", comb: "gasolina", cid: 14.5, est: 13.5, pctEle: 70, kmkwhCid: 5.8, kmkwhEst: 5.0, manut: 1200, seguro: 6800 },
+      { nome: "BYD King (PHEV)", preco: 180000, tipoH: "phev", comb: "gasolina", cid: 16.0, est: 15.0, pctEle: 70, kmkwhCid: 6.5, kmkwhEst: 5.5, manut: 1200, seguro: 6000 }
+    ],
+    ele: [
+      { nome: "BYD Dolphin", preco: 150000, cid: 6.6, est: 5.6, manut: 800, seguro: 5800 },
+      { nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, manut: 700, seguro: 4800 },
+      { nome: "GWM Ora 03", preco: 150000, cid: 6.4, est: 5.4, manut: 800, seguro: 5800 },
+      { nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, manut: 700, seguro: 4000 }
+    ]
+  };
+
+  const TIPOS = [
+    { id: "comb", rotulo: "Combustão", cor: "--car-comb", idx: 0 },
+    { id: "hib", rotulo: "Híbrido", cor: "--car-hib", idx: 1 },
+    { id: "ele", rotulo: "Elétrico", cor: "--car-ele", idx: 2 }
+  ];
+
+  const ETANOL_FATOR = 0.7; // etanol rende ~70% da gasolina em motores flex
+
+  // ---------- Utilidades ----------
+  const $ = (id) => document.getElementById(id);
+  const num = (el) => { const v = parseFloat(String(el.value).replace(",", ".")); return isFinite(v) ? v : 0; };
+  const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const brl2 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const n0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+  const n1 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function el(tag, attrs, ...children) {
+    const e = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === "class") e.className = attrs[k];
+      else if (k === "text") e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    children.forEach(c => c != null && e.append(c));
+    return e;
+  }
+
+  // ---------- Montagem dos formulários ----------
+  const ufSel = $("uf");
+  Object.keys(IPVA_UF).forEach(k => ufSel.append(el("option", { value: k, text: k === "OUTRO" ? IPVA_UF[k].nome : `${k} — ${IPVA_UF[k].nome}` })));
+  ufSel.value = "SP";
+
+  function field(label, unit, input, cls) {
+    const l = el("label", { class: "f" + (cls ? " " + cls : "") }, label);
+    if (unit) { l.append(" "); l.append(el("span", { class: "u", text: unit })); }
+    l.append(input);
+    return l;
+  }
+  const inNum = (key, val, step, min, max) => {
+    const i = el("input", { type: "number", "data-k": key, step: String(step || 1), min: String(min ?? 0) });
+    if (max != null) i.max = String(max);
+    i.value = val;
+    return i;
+  };
+
+  const carEls = {};
+  TIPOS.forEach(t => {
+    const card = el("div", { class: "car", style: `--c: var(${t.cor})` });
+    const header = el("header", null, el("span", { class: "dot" }), el("h3", { text: t.rotulo }));
+    card.append(header);
+
+    const g = el("div", { class: "grid" });
+    const presetSel = el("select", { "data-k": "preset" });
+    presetSel.append(el("option", { value: "", text: "— digitar meus dados —" }));
+    PRESETS[t.id].forEach((p, i) => presetSel.append(el("option", { value: String(i), text: p.nome })));
+    g.append(field("Modelo de exemplo", "", presetSel, "full"));
+
+    const nome = el("input", { type: "text", "data-k": "nome", placeholder: "Ex.: meu carro" });
+    g.append(field("Nome do carro", "", nome, "full"));
+    g.append(field("Preço", "R$", inNum("preco", 0, 1000)));
+    g.append(field("Alíquota IPVA", "%", inNum("ipva", 0, 0.1, 0, 10)));
+
+    if (t.id === "hib") {
+      const th = el("select", { "data-k": "tipoH" });
+      th.append(el("option", { value: "hev", text: "Híbrido convencional (HEV) — não carrega na tomada" }));
+      th.append(el("option", { value: "phev", text: "Híbrido plug-in (PHEV) — carrega na tomada" }));
+      g.append(field("Tipo de híbrido", "", th, "full"));
+    }
+
+    if (t.id !== "ele") {
+      const cs = el("select", { "data-k": "comb" });
+      [["gasolina", "Gasolina"], ["etanol", "Etanol"], ["diesel", "Diesel"]].forEach(([v, r]) => cs.append(el("option", { value: v, text: r })));
+      cs.dataset.prev = "gasolina";
+      g.append(field("Combustível", "", cs, "full"));
+      g.append(field("Consumo cidade", "km/l", inNum("cid", 0, 0.1, 0.1)));
+      g.append(field("Consumo estrada", "km/l", inNum("est", 0, 0.1, 0.1)));
+    }
+
+    if (t.id === "hib") {
+      const pe = field("% dos km no modo elétrico", "PHEV", inNum("pctEle", 0, 5, 0, 100), "full phev");
+      g.append(pe);
+      g.append(field("Elétrico cidade", "km/kWh", inNum("kmkwhCid", 6, 0.1, 0.1), "phev"));
+      g.append(field("Elétrico estrada", "km/kWh", inNum("kmkwhEst", 5, 0.1, 0.1), "phev"));
+    }
+
+    if (t.id === "ele") {
+      g.append(field("Consumo cidade", "km/kWh", inNum("cid", 0, 0.1, 0.1)));
+      g.append(field("Consumo estrada", "km/kWh", inNum("est", 0, 0.1, 0.1)));
+    }
+
+    g.append(field("Manutenção/ano", "R$ (opcional)", inNum("manut", 0, 100)));
+    g.append(field("Seguro/ano", "R$ (opcional)", inNum("seguro", 0, 100)));
+
+    if (t.id !== "ele") {
+      g.append(el("p", { class: "hint full", text: "Consumo com o combustível escolhido. Ao trocar entre gasolina e etanol, o consumo é ajustado automaticamente (etanol ≈ 70% da gasolina)." }));
+    }
+
+    card.append(g);
+    $("cars").append(card);
+    carEls[t.id] = card;
+
+    presetSel.addEventListener("change", () => { if (presetSel.value !== "") aplicarPreset(t, PRESETS[t.id][+presetSel.value]); calcular(); });
+    card.addEventListener("input", (ev) => {
+      const k = ev.target.dataset.k;
+      if (k && k !== "preset" && k !== "comb" && k !== "tipoH") presetSel.value = "";
+    });
+    const combSel = card.querySelector('[data-k="comb"]');
+    if (combSel) combSel.addEventListener("change", () => {
+      const prev = combSel.dataset.prev, now = combSel.value;
+      let f = 1;
+      if (prev !== "etanol" && now === "etanol") f = ETANOL_FATOR;
+      if (prev === "etanol" && now !== "etanol") f = 1 / ETANOL_FATOR;
+      if (f !== 1) ["cid", "est"].forEach(k => { const i = card.querySelector(`[data-k="${k}"]`); i.value = (num(i) * f).toFixed(1); });
+      combSel.dataset.prev = now;
+      calcular();
+    });
+    const tipoSel = card.querySelector('[data-k="tipoH"]');
+    if (tipoSel) tipoSel.addEventListener("change", () => { atualizarPhev(); calcular(); });
+  });
+
+  function setK(card, k, v) { const i = card.querySelector(`[data-k="${k}"]`); if (i && v != null) i.value = v; }
+  function getK(card, k) { return card.querySelector(`[data-k="${k}"]`); }
+
+  function aplicarPreset(t, p) {
+    const c = carEls[t.id];
+    setK(c, "nome", p.nome); setK(c, "preco", p.preco);
+    setK(c, "manut", p.manut); setK(c, "seguro", p.seguro);
+    if (t.id === "hib") { setK(c, "tipoH", p.tipoH); setK(c, "pctEle", p.pctEle); setK(c, "kmkwhCid", p.kmkwhCid); setK(c, "kmkwhEst", p.kmkwhEst); }
+    if (t.id !== "ele") {
+      const combSel = getK(c, "comb");
+      combSel.value = "gasolina"; combSel.dataset.prev = "gasolina";
+    }
+    setK(c, "cid", p.cid); setK(c, "est", p.est);
+    atualizarPhev();
+  }
+
+  function atualizarPhev() {
+    const c = carEls.hib;
+    const isPhev = getK(c, "tipoH").value === "phev";
+    c.querySelectorAll(".phev").forEach(e => e.classList.toggle("hide", !isPhev));
+  }
+
+  function aplicarIpvaUF() {
+    const a = IPVA_UF[ufSel.value].a;
+    TIPOS.forEach(t => setK(carEls[t.id], "ipva", a[t.idx]));
+  }
+
+  // ---------- Cálculo ----------
+  function ler() {
+    const g = {
+      kmMes: num($("kmDia")) * num($("diasMes")) + num($("kmExtra")),
+      pctCidade: Math.min(100, Math.max(0, num($("pctCidade")))) / 100,
+      anos: Math.max(1, Math.min(15, Math.round(num($("anos"))))),
+      preco: { gasolina: num($("pGasolina")), etanol: num($("pEtanol")), diesel: num($("pDiesel")) },
+      pCasa: num($("pCasa")), pPublica: num($("pPublica")),
+      pctCasa: Math.min(100, Math.max(0, num($("pctCasa")))) / 100,
+      perdas: num($("perdas")) / 100,
+      deprec: num($("deprec")) / 100
+    };
+    g.kmAno = g.kmMes * 12;
+    g.kwhPreco = g.pctCasa * g.pCasa + (1 - g.pctCasa) * g.pPublica;
+    return g;
+  }
+
+  function litros(km, pctCid, cid, est) {
+    if (km <= 0) return 0;
+    const kc = km * pctCid, ke = km * (1 - pctCid);
+    return (cid > 0 ? kc / cid : 0) + (est > 0 ? ke / est : 0);
+  }
+
+  function calcCarro(t, g) {
+    const c = carEls[t.id];
+    const v = (k) => { const i = getK(c, k); return i ? num(i) : 0; };
+    const nome = getK(c, "nome").value.trim() || t.rotulo;
+    const preco = v("preco");
+    const aliq = v("ipva") / 100;
+    let custoEnergiaAno = 0, litrosAno = 0, kwhAno = 0, detalheEnergia = "";
+
+    if (t.id === "comb" || t.id === "hib") {
+      const comb = getK(c, "comb").value;
+      let kmComb = g.kmAno;
+      if (t.id === "hib" && getK(c, "tipoH").value === "phev") {
+        const pe = Math.min(100, Math.max(0, v("pctEle"))) / 100;
+        const kmEle = g.kmAno * pe;
+        kmComb = g.kmAno - kmEle;
+        kwhAno = litros(kmEle, g.pctCidade, v("kmkwhCid"), v("kmkwhEst")) * (1 + g.perdas);
+      }
+      litrosAno = litros(kmComb, g.pctCidade, v("cid"), v("est"));
+      custoEnergiaAno = litrosAno * g.preco[comb] + kwhAno * g.kwhPreco;
+      detalheEnergia = comb;
+    } else {
+      kwhAno = litros(g.kmAno, g.pctCidade, v("cid"), v("est")) * (1 + g.perdas);
+      custoEnergiaAno = kwhAno * g.kwhPreco;
+      detalheEnergia = "eletricidade";
+    }
+
+    const manut = v("manut"), seguro = v("seguro");
+    const anos = [];
+    let ipvaTotal = 0;
+    for (let y = 0; y < g.anos; y++) {
+      const ipva = preco * Math.pow(1 - g.deprec, y) * aliq;
+      ipvaTotal += ipva;
+      anos.push({ ipva, energia: custoEnergiaAno, manut, seguro, total: ipva + custoEnergiaAno + manut + seguro });
+    }
+    const energiaTotal = custoEnergiaAno * g.anos;
+    const manutTotal = manut * g.anos, seguroTotal = seguro * g.anos;
+    const operacional = ipvaTotal + energiaTotal + manutTotal + seguroTotal;
+    const kmTotal = g.kmAno * g.anos;
+    return {
+      t, nome, preco, aliq, anos, litrosAno, kwhAno, detalheEnergia,
+      ipvaAno1: anos[0].ipva, ipvaTotal, energiaMes: custoEnergiaAno / 12, energiaAno: custoEnergiaAno, energiaTotal,
+      manutTotal, seguroTotal, operacional,
+      mensal: operacional / (g.anos * 12),
+      porKm: kmTotal > 0 ? operacional / kmTotal : 0,
+      energiaKm: g.kmAno > 0 ? custoEnergiaAno / g.kmAno : 0,
+      comCompra: operacional + preco
+    };
+  }
+
+  // ---------- Renderização ----------
+  function render(g, rs) {
+    $("kmResumo").textContent = `Você roda cerca de ${n0.format(g.kmMes)} km/mês (${n0.format(g.kmAno)} km/ano), ${Math.round(g.pctCidade * 100)}% na cidade. Energia elétrica média: ${brl2.format(g.kwhPreco)}/kWh. Período: ${g.anos} ${g.anos === 1 ? "ano" : "anos"}.`;
+
+    const minOp = Math.min(...rs.map(r => r.operacional));
+
+    // Cards
+    const s = $("summary"); s.textContent = "";
+    rs.forEach(r => {
+      const card = el("div", { class: "sum", style: `--c: var(${r.t.cor})` });
+      if (r.operacional === minOp) card.append(el("span", { class: "badge", text: "Menor custo de uso" }));
+      card.append(el("div", { class: "name" }, el("span", { class: "dot" }), el("span", { text: r.nome })));
+      card.append(el("div", { class: "type", text: r.t.rotulo }));
+      const big = el("div", { class: "big" }, brl.format(r.mensal), " ");
+      big.append(el("small", { text: "/mês" }));
+      card.append(big);
+      const dl = el("dl");
+      const add = (a, b) => { dl.append(el("dt", { text: a }), el("dd", { text: b })); };
+      add(r.t.id === "ele" ? "Energia por mês" : "Combustível/energia por mês", brl.format(r.energiaMes));
+      add("Custo de energia por km", brl2.format(r.energiaKm));
+      add("IPVA no 1º ano", brl.format(r.ipvaAno1) + ` (${n1.format(r.aliq * 100)}%)`);
+      add("Custo total por km", brl2.format(r.porKm));
+      add(`Total de uso em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}`, brl.format(r.operacional));
+      if (r.litrosAno > 0) add("Litros por ano", n0.format(r.litrosAno) + " L");
+      if (r.kwhAno > 0) add("kWh por ano", n0.format(r.kwhAno) + " kWh");
+      card.append(dl);
+      s.append(card);
+    });
+
+    // Tabela
+    const tb = $("tabela"); tb.textContent = "";
+    const thead = el("thead"), tr = el("tr");
+    tr.append(el("th", { text: `Em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}` }));
+    rs.forEach(r => tr.append(el("th", { text: r.nome })));
+    thead.append(tr); tb.append(thead);
+    const tbody = el("tbody");
+    const linhas = [
+      ["Combustível / energia", r => r.energiaTotal],
+      ["IPVA", r => r.ipvaTotal],
+      ["Manutenção", r => r.manutTotal],
+      ["Seguro", r => r.seguroTotal],
+      ["Total de uso", r => r.operacional, "total"],
+      ["Custo por mês", r => r.mensal],
+      ["Preço de compra", r => r.preco],
+      ["Compra + uso", r => r.comCompra, "total"]
+    ];
+    linhas.forEach(([rot, f, cls]) => {
+      const row = el("tr", cls ? { class: cls } : null);
+      row.append(el("td", { text: rot }));
+      const vals = rs.map(f);
+      const mn = Math.min(...vals);
+      vals.forEach(v => row.append(el("td", { class: (v === mn && vals.some(x => x !== mn)) ? "best" : "", text: brl.format(v) })));
+      tbody.append(row);
+    });
+    tb.append(tbody);
+
+    renderChart(g, rs);
+    renderInsights(g, rs);
+  }
+
+  function renderInsights(g, rs) {
+    const ul = $("insights"); ul.textContent = "";
+    const li = (t) => ul.append(el("li", { text: t }));
+    const ord = [...rs].sort((a, b) => a.operacional - b.operacional);
+    li(`Menor custo de uso: ${ord[0].nome} (${ord[0].t.rotulo}), com ${brl.format(ord[0].mensal)}/mês — ${brl.format(ord[ord.length - 1].operacional - ord[0].operacional)} a menos que o ${ord[ord.length - 1].nome} em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}.`);
+
+    const ordC = [...rs].sort((a, b) => a.comCompra - b.comCompra);
+    li(`Considerando também o preço de compra, o mais vantajoso no período é ${ordC[0].nome} (${brl.format(ordC[0].comCompra)} no total).`);
+
+    // Payback em relação ao carro a combustão
+    const base = rs.find(r => r.t.id === "comb");
+    rs.filter(r => r !== base).forEach(r => {
+      const difPreco = r.preco - base.preco;
+      const econAno = (base.operacional - r.operacional) / g.anos;
+      if (difPreco <= 0 && econAno >= 0) li(`${r.nome} custa menos para comprar e para usar do que o ${base.nome}: vantagem desde o primeiro dia.`);
+      else if (difPreco > 0 && econAno > 0) {
+        const anos = difPreco / econAno;
+        li(`${r.nome} custa ${brl.format(difPreco)} a mais que o ${base.nome}, mas economiza ~${brl.format(econAno)}/ano no uso: a diferença se paga em ~${n1.format(anos)} ${anos < 2 ? "ano" : "anos"} (${n0.format(anos * g.kmAno)} km)${anos > g.anos ? ", depois do período simulado" : ""}.`);
+      } else if (difPreco > 0 && econAno <= 0) li(`${r.nome} é mais caro para comprar e para usar do que o ${base.nome} com estes dados.`);
+      else li(`${r.nome} é ${brl.format(-difPreco)} mais barato para comprar, mas custa ~${brl.format(-econAno)}/ano a mais no uso que o ${base.nome}.`);
+    });
+
+    const ipvaDif = Math.max(...rs.map(r => r.ipvaTotal)) - Math.min(...rs.map(r => r.ipvaTotal));
+    if (ipvaDif > 0) li(`Só no IPVA, a diferença entre o maior e o menor valor no período é de ${brl.format(ipvaDif)}.`);
+  }
+
+  // ---------- Gráfico (SVG) ----------
+  const NS = "http://www.w3.org/2000/svg";
+  const sv = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  let chartState = null;
+
+  function renderChart(g, rs) {
+    const incluir = $("incluirCompra").checked;
+    const svg = $("chart");
+    const box = $("chartBox");
+    const W = Math.max(300, box.clientWidth), H = 320;
+    const m = { t: 16, r: 16 + Math.min(150, W * 0.28), b: 32, l: 72 };
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("height", String(H));
+    svg.textContent = "";
+
+    const series = rs.map(r => {
+      const pts = [incluir ? r.preco : 0];
+      r.anos.forEach((a, i) => pts.push(pts[i] + a.total));
+      return { r, pts };
+    });
+    const maxV = Math.max(1, ...series.flatMap(s => s.pts));
+    const minV = incluir ? Math.min(...series.map(s => s.pts[0])) * 0.9 : 0;
+    const nice = niceScale(minV, maxV, 5);
+    const x = (i) => m.l + (i / g.anos) * (W - m.l - m.r);
+    const y = (v) => m.t + (1 - (v - nice.min) / (nice.max - nice.min)) * (H - m.t - m.b);
+
+    // Grade e eixo Y
+    for (let v = nice.min; v <= nice.max + 1e-6; v += nice.step) {
+      svg.append(sv("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: cssVar("--grid"), "stroke-width": 1 }));
+      const t = sv("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" });
+      t.textContent = abrev(v);
+      svg.append(t);
+    }
+    // Eixo X
+    const passo = g.anos > 10 ? 2 : 1;
+    for (let i = 0; i <= g.anos; i += passo) {
+      const t = sv("text", { x: x(i), y: H - m.b + 18, "text-anchor": "middle" });
+      t.textContent = i === 0 ? (incluir ? "compra" : "0") : `ano ${i}`;
+      svg.append(t);
+    }
+
+    // Linhas
+    series.forEach(s => {
+      const cor = cssVar(s.r.t.cor);
+      const d = s.pts.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+      svg.append(sv("path", { d, fill: "none", stroke: cor, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    });
+
+    // Rótulos diretos no fim das linhas (evita sobreposição)
+    const fim = series.map(s => ({ s, y: y(s.pts[s.pts.length - 1]) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < fim.length; i++) if (fim[i].y - fim[i - 1].y < 28) fim[i].y = fim[i - 1].y + 28;
+    fim.forEach(f => {
+      const cor = cssVar(f.s.r.t.cor);
+      const xe = x(g.anos);
+      svg.append(sv("circle", { cx: xe, cy: y(f.s.pts[f.s.pts.length - 1]), r: 4, fill: cor, stroke: cssVar("--surface-1"), "stroke-width": 2 }));
+      const t1 = sv("text", { x: xe + 10, y: f.y - 1, style: `fill: var(--text-primary); font-weight: 600` });
+      t1.textContent = trunc(f.s.r.nome, Math.floor(m.r / 7));
+      const t2 = sv("text", { x: xe + 10, y: f.y + 13 });
+      t2.textContent = brl.format(f.s.pts[f.s.pts.length - 1]);
+      svg.append(t1, t2);
+    });
+
+    // Camada de hover
+    const cross = sv("line", { y1: m.t, y2: H - m.b, stroke: cssVar("--text-muted"), "stroke-width": 1, "stroke-dasharray": "3 3", visibility: "hidden" });
+    svg.append(cross);
+    const dots = series.map(s => { const c = sv("circle", { r: 4, fill: cssVar(s.r.t.cor), stroke: cssVar("--surface-1"), "stroke-width": 2, visibility: "hidden" }); svg.append(c); return c; });
+    const hit = sv("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent", tabindex: "0" });
+    svg.append(hit);
+
+    chartState = { g, series, x, y, m, W, cross, dots, incluir };
+
+    // Legenda
+    const lg = $("legend"); lg.textContent = "";
+    series.forEach(s => lg.append(el("span", { style: `--c: var(${s.r.t.cor})` }, el("i"), document.createTextNode(`${s.r.nome} (${s.r.t.rotulo})`))));
+
+    const mostrar = (i) => {
+      const st = chartState, tip = $("tip");
+      cross.setAttribute("x1", st.x(i)); cross.setAttribute("x2", st.x(i)); cross.setAttribute("visibility", "visible");
+      st.series.forEach((s, k) => { dots[k].setAttribute("cx", st.x(i)); dots[k].setAttribute("cy", st.y(s.pts[i])); dots[k].setAttribute("visibility", "visible"); });
+      tip.textContent = "";
+      tip.append(el("div", { class: "t", text: i === 0 ? (st.incluir ? "Na compra" : "Início") : `Acumulado até o ano ${i}` }));
+      [...st.series].sort((a, b) => b.pts[i] - a.pts[i]).forEach(s => {
+        tip.append(el("div", { class: "r", style: `--c: var(${s.r.t.cor})` }, el("span", null, el("i"), document.createTextNode(s.r.nome)), el("b", { text: brl.format(s.pts[i]) })));
+      });
+      tip.classList.remove("hide");
+      const bw = $("chartBox").clientWidth, scale = bw / st.W;
+      const px = st.x(i) * scale;
+      const tw = tip.offsetWidth;
+      tip.style.left = (px + 12 + tw > bw ? px - tw - 12 : px + 12) + "px";
+      tip.style.top = "8px";
+    };
+    const esconder = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); $("tip").classList.add("hide"); };
+    let atual = g.anos;
+    hit.addEventListener("pointermove", (ev) => {
+      const rect = svg.getBoundingClientRect();
+      const sx = (ev.clientX - rect.left) * (W / rect.width);
+      const i = Math.max(0, Math.min(g.anos, Math.round((sx - m.l) / (W - m.l - m.r) * g.anos)));
+      atual = i; mostrar(i);
+    });
+    hit.addEventListener("pointerleave", esconder);
+    hit.addEventListener("focus", () => mostrar(atual));
+    hit.addEventListener("blur", esconder);
+    hit.addEventListener("keydown", (ev) => {
+      if (ev.key === "ArrowRight") { atual = Math.min(g.anos, atual + 1); mostrar(atual); ev.preventDefault(); }
+      if (ev.key === "ArrowLeft") { atual = Math.max(0, atual - 1); mostrar(atual); ev.preventDefault(); }
+    });
+  }
+
+  function niceScale(min, max, ticks) {
+    const range = max - min || 1;
+    const raw = range / ticks;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(s => range / s <= ticks) || 10 * mag;
+    return { min: Math.floor(min / step) * step, max: Math.ceil(max / step) * step, step };
+  }
+  function abrev(v) {
+    if (Math.abs(v) >= 1e6) return "R$ " + n1.format(v / 1e6) + " mi";
+    if (Math.abs(v) >= 1e3) return "R$ " + n0.format(v / 1e3) + " mil";
+    return "R$ " + n0.format(v);
+  }
+  function trunc(s, n) { return s.length > n ? s.slice(0, Math.max(3, n - 1)) + "…" : s; }
+
+  // ---------- Persistência local (conveniência) ----------
+  const STORE = "comparador-carros-v1";
+  function salvar() {
+    try {
+      const data = { global: {}, cars: {} };
+      document.querySelectorAll("section.card input[id], section.card select[id]").forEach(i => { data.global[i.id] = i.type === "checkbox" ? i.checked : i.value; });
+      TIPOS.forEach(t => { data.cars[t.id] = {}; carEls[t.id].querySelectorAll("[data-k]").forEach(i => { data.cars[t.id][i.dataset.k] = i.value; }); });
+      localStorage.setItem(STORE, JSON.stringify(data));
+    } catch (e) { /* armazenamento indisponível */ }
+  }
+  function restaurar() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      Object.entries(data.global || {}).forEach(([id, v]) => { const i = $(id); if (i) { if (i.type === "checkbox") i.checked = !!v; else i.value = v; } });
+      TIPOS.forEach(t => Object.entries((data.cars || {})[t.id] || {}).forEach(([k, v]) => {
+        const i = getK(carEls[t.id], k); if (i) { i.value = v; if (k === "comb") i.dataset.prev = v; }
+      }));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ---------- Ciclo ----------
+  function calcular() {
+    const g = ler();
+    const rs = TIPOS.map(t => calcCarro(t, g));
+    render(g, rs);
+    salvar();
+  }
+
+  if (!restaurar()) {
+    getK(carEls.comb, "preset").value = "0"; aplicarPreset(TIPOS[0], PRESETS.comb[0]);
+    getK(carEls.hib, "preset").value = "0"; aplicarPreset(TIPOS[1], PRESETS.hib[0]);
+    getK(carEls.ele, "preset").value = "0"; aplicarPreset(TIPOS[2], PRESETS.ele[0]);
+    aplicarIpvaUF();
+  }
+  atualizarPhev();
+
+  ufSel.addEventListener("change", () => { aplicarIpvaUF(); calcular(); });
+  document.addEventListener("input", (ev) => { if (ev.target.matches("input")) calcular(); });
+  document.addEventListener("change", (ev) => { if (ev.target.matches("select[data-k=tipoH], #incluirCompra")) calcular(); });
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(calcular, 120); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", calcular);
+
+  calcular();
+})();
+</script>
+</body>
+</html>
