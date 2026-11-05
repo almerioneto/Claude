@@ -232,10 +232,10 @@
     <div class="subhead">Combustível</div>
     <div class="grid">
       <label class="f">Gasolina <span class="u">R$/litro</span>
-        <input type="number" inputmode="decimal" id="pGasolina" min="0" step="0.01" value="6.29">
+        <input type="number" inputmode="decimal" id="pGasolina" min="0" step="0.01" value="6.25">
       </label>
       <label class="f">Etanol <span class="u">R$/litro</span>
-        <input type="number" inputmode="decimal" id="pEtanol" min="0" step="0.01" value="4.29">
+        <input type="number" inputmode="decimal" id="pEtanol" min="0" step="0.01" value="4.45">
       </label>
       <label class="f">Diesel <span class="u">R$/litro</span>
         <input type="number" inputmode="decimal" id="pDiesel" min="0" step="0.01" value="6.09">
@@ -250,8 +250,8 @@
       <label class="f">Recarga pública/rápida <span class="u">R$/kWh</span>
         <input type="number" inputmode="decimal" id="pPublica" min="0" step="0.01" value="2.00">
       </label>
-      <label class="f">% das recargas em casa
-        <input type="number" inputmode="decimal" id="pctCasa" min="0" max="100" step="5" value="85">
+      <label class="f">% das recargas em casa <span class="u">0 = sem carregador em casa</span>
+        <input type="number" inputmode="decimal" id="pctCasa" min="0" max="100" step="5" value="0">
       </label>
       <label class="f">Perdas na recarga <span class="u">%</span>
         <input type="number" inputmode="decimal" id="perdas" min="0" max="40" step="1" value="10">
@@ -327,7 +327,7 @@
     RS: { nome: "Rio Grande do Sul", a: [3, 3, 3] },
     DF: { nome: "Distrito Federal", a: [3.5, 0, 0] },
     GO: { nome: "Goiás", a: [3.75, 3.75, 3.75] },
-    BA: { nome: "Bahia", a: [2.5, 2.5, 2.5] },
+    BA: { nome: "Bahia", a: [2.5, 2.5, 0] }, // elétricos isentos até R$ 300 mil (regra 2026)
     PE: { nome: "Pernambuco", a: [2.4, 2.4, 0] },
     CE: { nome: "Ceará", a: [3, 3, 0] },
     ES: { nome: "Espírito Santo", a: [2, 2, 2] },
@@ -371,6 +371,7 @@
       { id: "kwid-e", g: "Compactos e urbanos", nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, aut: 180, manut: 700, seguro: 4000 },
       { id: "dolphin-mini", g: "Compactos e urbanos", nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, aut: 280, manut: 700, seguro: 4800 },
       { id: "ex2", g: "Compactos e urbanos", nome: "Geely EX2 Pro", preco: 124600, cid: 7.9, est: 6.6, aut: 289, manut: 700, seguro: 4800 },
+      { id: "ex2-max", g: "Compactos e urbanos", nome: "Geely EX2 Max", preco: 137800, cid: 7.9, est: 6.6, aut: 289, manut: 700, seguro: 5200 },
       { id: "icar", g: "Compactos e urbanos", nome: "Caoa Chery iCar", preco: 120000, cid: 7.5, est: 6.2, aut: 280, manut: 700, seguro: 4800 },
       { id: "aion-ut", g: "Hatches médios", nome: "GAC Aion UT Premium", preco: 139990, cid: 6.3, est: 5.3, aut: 253, manut: 800, seguro: 5200 },
       { id: "dolphin-gs", g: "Hatches médios", nome: "BYD Dolphin GS", preco: 149990, cid: 7.0, est: 5.8, aut: 291, manut: 800, seguro: 5600 },
@@ -387,7 +388,7 @@
 
   // Comparação sugerida (pedido do usuário)
   const SUGERIDOS = [
-    ["ele", "dolphin-se"], ["ele", "dolphin-gs"], ["ele", "ex2"], ["ele", "aion-ut"],
+    ["ele", "dolphin-se"], ["ele", "dolphin-gs"], ["ele", "ex2-max"], ["ele", "aion-ut"],
     ["hib", "omoda5"], ["hib", "songpro-gs"], ["hib", "atto2-gs"]
   ];
 
@@ -424,7 +425,7 @@
   // ---------- Formulário global ----------
   const ufSel = $("uf");
   Object.keys(IPVA_UF).forEach(k => ufSel.append(el("option", { value: k, text: k === "OUTRO" ? IPVA_UF[k].nome : `${k} — ${IPVA_UF[k].nome}` })));
-  ufSel.value = "SP";
+  ufSel.value = "BA";
 
   function field(label, unit, input, cls) {
     const l = el("label", { class: "f" + (cls ? " " + cls : "") }, label);
@@ -589,6 +590,7 @@
         chips.push("Plug-in: carrega na tomada");
         if (aut > 0) chips.push(`${n0.format(aut)} km só no elétrico`);
         chips.push(`${n0.format(num(getK(card, "pctEle")))}% do seu trajeto no elétrico`);
+        if (num($("pctCasa")) === 0) chips.push("Sem carregador em casa: supõe recarga pública diária. Se não for carregar, coloque 0%");
       } else {
         chips.push(p && p.g === MHEV ? "Híbrido leve: não roda só no elétrico" : "Recarrega sozinho, não vai na tomada");
       }
@@ -917,7 +919,7 @@
   function trunc(s, n) { return s.length > n ? s.slice(0, Math.max(3, n - 1)) + "…" : s; }
 
   // ---------- Persistência local (conveniência) ----------
-  const STORE = "comparador-carros-v3";
+  const STORE = "comparador-carros-v4";
   function salvar() {
     try {
       const data = { global: {}, cars: [] };

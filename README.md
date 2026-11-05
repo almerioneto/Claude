@@ -1,7 +1,7 @@
 # Comparador de carros: combustão × híbrido × elétrico
 
 Calculadora em uma única página (`index.html`, sem dependências) que compara até 8 carros
-a combustão, híbridos (HEV ou plug-in) e elétricos. A comparação sugerida traz BYD Dolphin SE e GS, Geely EX2, GAC Aion UT, Omoda 5 HEV, BYD Song Pro GS e BYD Atto 2 GS.
+a combustão, híbridos (HEV ou plug-in) e elétricos. A comparação sugerida traz BYD Dolphin SE e GS, Geely EX2 Max, GAC Aion UT, Omoda 5 HEV, BYD Song Pro GS e BYD Atto 2 GS.
 
 ## Como usar
 
