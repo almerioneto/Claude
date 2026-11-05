@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Comparador de Carros</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Compare carro a combustão, híbrido e elétrico: IPVA, combustível, energia e trajeto.">
+<meta name="description" content="Compare carros a combustão, híbridos e elétricos: IPVA, combustível, energia e trajeto.">
 <style>
   :root {
     color-scheme: light;
@@ -20,9 +20,10 @@
     --accent: #2a78d6;
     --good: #0c7a3e;
     --good-bg: #e3f4ea;
-    --car-comb: #eb6834;
-    --car-hib: #2a78d6;
-    --car-ele: #1baf7a;
+    --danger: #b42318;
+    /* cores das séries (ordem fixa, uma por carro) */
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -38,9 +39,9 @@
       --accent: #3987e5;
       --good: #5fd08f;
       --good-bg: #173324;
-      --car-comb: #d95926;
-      --car-hib: #3987e5;
-      --car-ele: #199e70;
+      --danger: #f97066;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
     }
   }
   :root[data-theme="dark"] {
@@ -56,9 +57,9 @@
     --accent: #3987e5;
     --good: #5fd08f;
     --good-bg: #173324;
-    --car-comb: #d95926;
-    --car-hib: #3987e5;
-    --car-ele: #199e70;
+    --danger: #f97066;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
   }
 
   * { box-sizing: border-box; }
@@ -73,38 +74,42 @@
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
   h2 { font-size: 1.15rem; margin: 0 0 12px; }
   h3 { font-size: 1rem; margin: 0; }
-  p.lead { color: var(--text-secondary); margin: 0 0 24px; }
+  p.lead { color: var(--text-secondary); margin: 0 0 24px; max-width: 70ch; }
   section.card {
     background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
+    min-width: 0;
   }
   .step { color: var(--text-muted); font-weight: 600; margin-right: 6px; }
   .grid { display: grid; gap: 12px 16px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); min-width: 0; }
   label.f span.u { color: var(--text-muted); font-weight: 400; }
   label.f > input, label.f > select { margin-top: auto; }
-  input, select {
+  input, select, button {
     font: inherit; color: var(--text-primary);
     background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px;
     padding: 10px 12px; width: 100%; min-width: 0; font-size: 16px; min-height: 44px;
   }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { width: auto; cursor: pointer; font-weight: 600; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .hint { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
   .subhead { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 18px 0 8px; font-weight: 600; }
 
-  .cars { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cars { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
   .car {
     border: 1px solid var(--border); border-radius: 10px; padding: 16px;
-    background: var(--surface-1); border-top: 4px solid var(--c);
+    background: var(--surface-1); border-top: 4px solid var(--c); min-width: 0;
   }
   .car header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .car header select { flex: 1; font-weight: 600; }
+  .car header button { padding: 8px 12px; color: var(--danger); background: transparent; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
   .car .grid { grid-template-columns: 1fr 1fr; }
   .car .full { grid-column: 1 / -1; }
@@ -115,15 +120,15 @@
     font-size: 0.75rem; color: var(--text-secondary); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px;
   }
-  optgroup { font-style: normal; font-weight: 700; }
+  .add-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+  .add-row .hint { margin: 0; }
 
-  .summary { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .sum {
-    border: 1px solid var(--border); border-radius: 10px; padding: 16px; position: relative;
-  }
+  .summary { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .sum { border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+  .sum .rank { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
   .sum .name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
   .sum .type { color: var(--text-muted); font-size: 0.8rem; }
-  .sum .big { font-size: 1.7rem; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .sum .big { font-size: 1.6rem; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
   .sum .big small { font-size: 0.85rem; font-weight: 400; color: var(--text-secondary); }
   .sum dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 10px 0 0; font-size: 0.88rem; }
   .sum dt { color: var(--text-secondary); }
@@ -137,22 +142,23 @@
   table { border-collapse: collapse; width: 100%; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
+  td:first-child { display: flex; align-items: center; gap: 8px; }
   thead th { color: var(--text-secondary); font-weight: 600; }
-  tr.total td { font-weight: 700; }
+  td.total { font-weight: 700; }
   td.best { color: var(--good); font-weight: 700; }
 
-  .insights { margin: 0; padding-left: 20px; }
+  .insights { margin: 0; padding-left: 20px; max-width: 80ch; }
   .insights li { margin-bottom: 6px; }
 
   .chart-box { position: relative; }
-  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .legend i { width: 16px; height: 2px; background: var(--c); display: inline-block; border-radius: 1px; }
   svg text { fill: var(--text-secondary); font-size: 11px; }
   .tip {
     position: absolute; pointer-events: none; background: var(--surface-1);
     border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
-    font-size: 0.82rem; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 170px;
+    font-size: 0.82rem; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 190px; z-index: 5;
   }
   .tip .t { color: var(--text-muted); margin-bottom: 4px; }
   .tip .r { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
@@ -160,24 +166,28 @@
   .tip .r span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
   .tip .r i { width: 12px; height: 2px; background: var(--c); display: inline-block; }
   .check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px; }
-  .check input { width: auto; }
+  .check input { width: auto; min-height: 0; }
   footer { color: var(--text-muted); font-size: 0.8rem; }
+  footer a { color: inherit; }
+
   /* Barra fixa de resultado (celular) */
   .bar { display: none; }
   @media (max-width: 760px) {
     h1 { font-size: 1.35rem; }
     .grid { grid-template-columns: 1fr 1fr; }
+    .cars { grid-template-columns: 1fr; }
     section.card { padding: 16px; }
     .bar {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none;
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
       background: var(--surface-1); border-top: 1px solid var(--border);
       box-shadow: 0 -4px 16px rgba(0,0,0,.08);
       padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
       text-decoration: none; color: inherit;
     }
-    .bar div { min-width: 0; display: flex; flex-direction: column; align-items: center; }
-    .bar .n { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; max-width: 100%; }
+    .bar::-webkit-scrollbar { display: none; }
+    .bar div { flex: none; display: flex; flex-direction: column; min-width: 88px; max-width: 120px; }
+    .bar .n { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
     .bar .n span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bar b { font-size: 1rem; font-variant-numeric: tabular-nums; }
     .bar b.best { color: var(--good); }
@@ -187,6 +197,7 @@
   @media (max-width: 340px) {
     .grid, .car .grid { grid-template-columns: 1fr; }
   }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
@@ -259,8 +270,13 @@
   <!-- 2. Carros -->
   <section class="card">
     <h2><span class="step">2</span>Quais carros você quer comparar?</h2>
-    <p class="hint" style="margin:0 0 16px">Escolha um modelo de exemplo para preencher os campos ou digite os dados do seu carro. Os números dos exemplos são aproximados — use o preço da tabela FIPE e o consumo do Inmetro (PBEV) do modelo exato.</p>
+    <p class="hint" style="margin:0 0 16px">Para cada carro, escolha o tipo e o modelo, ou digite os dados do seu. Preço e consumo vêm de lançamentos e do Inmetro (PBEV) e são aproximados; confira a versão exata.</p>
     <div class="cars" id="cars"></div>
+    <div class="add-row">
+      <button type="button" id="addCar">+ Adicionar carro</button>
+      <button type="button" id="resetCars">Voltar à comparação sugerida</button>
+      <p class="hint" id="carCount"></p>
+    </div>
   </section>
 
   <!-- 3. Resultado -->
@@ -272,6 +288,7 @@
 
   <section class="card">
     <h2>Detalhamento no período</h2>
+    <p class="hint" style="margin:0 0 8px">Ordenado do menor para o maior custo de uso. Em verde, o menor valor de cada coluna.</p>
     <div class="table-wrap"><table id="tabela"></table></div>
   </section>
 
@@ -280,7 +297,7 @@
     <label class="check"><input type="checkbox" id="incluirCompra" checked> Incluir o preço de compra (mostra quando a economia compensa o carro mais caro)</label>
     <div class="legend" id="legend"></div>
     <div class="chart-box" id="chartBox">
-      <svg id="chart" width="100%" height="320" role="img" aria-label="Custo acumulado por ano para cada carro"></svg>
+      <svg id="chart" width="100%" height="360" role="img" aria-label="Custo acumulado por ano para cada carro"></svg>
       <div class="tip hide" id="tip"></div>
     </div>
   </section>
@@ -292,7 +309,7 @@
 
   <a class="bar" id="bar" href="#resultado" aria-label="Ver resultado"></a>
 
-  <footer>Estimativa simplificada. Não considera financiamento, valor de revenda, troca de bateria, pneus ou variação futura de preços. Valores de exemplo aproximados para fins de simulação.</footer>
+  <footer>Estimativa simplificada. Não considera financiamento, valor de revenda, troca de bateria, pneus ou variação futura de preços. Preços de tabela de lançamento (2025–2026) e consumo do Inmetro/PBEV; o consumo em km/kWh dos elétricos foi estimado pela bateria e autonomia Inmetro. A autonomia elétrica dos plug-in Atto 2 é estimada (a BYD divulga só o ciclo NEDC).</footer>
 </div>
 
 <script>
@@ -320,60 +337,66 @@
     OUTRO: { nome: "Outro / personalizado", a: [3, 3, 3] }
   };
 
-  // Modelos de exemplo (valores aproximados, referência 2026). Consumo em km/l (gasolina) e km/kWh.
-  // aut = autonomia total do elétrico (km, PBEV); autEle = autonomia só no modo elétrico do plug-in (km).
+  // Modelos (valores aproximados). Consumo em km/l (gasolina) e km/kWh.
+  // aut = autonomia Inmetro do elétrico (km); autEle = autonomia só elétrica do plug-in (km).
+  const HEV = "Híbrido convencional (HEV), não carrega na tomada";
+  const MHEV = "Híbrido leve (MHEV), economia pequena";
+  const PHEV = "Híbrido plug-in (PHEV), carrega na tomada";
   const PRESETS = {
     comb: [
-      { g: "Hatch", nome: "Hyundai HB20 1.0", preco: 90000, cid: 13.0, est: 15.2, manut: 1200, seguro: 3500 },
-      { g: "Hatch", nome: "Volkswagen Polo 1.0 TSI", preco: 115000, cid: 12.5, est: 14.6, manut: 1500, seguro: 4200 },
-      { g: "Sedã", nome: "Toyota Corolla 2.0 flex", preco: 165000, cid: 11.2, est: 13.6, manut: 1800, seguro: 5500 },
-      { g: "SUV", nome: "Jeep Compass 1.3 T270", preco: 200000, cid: 10.1, est: 11.9, manut: 2200, seguro: 6500 }
+      { id: "hb20", g: "Hatch", nome: "Hyundai HB20 1.0", preco: 90000, cid: 13.0, est: 15.2, manut: 1200, seguro: 3500 },
+      { id: "polo", g: "Hatch", nome: "Volkswagen Polo 1.0 TSI", preco: 115000, cid: 12.5, est: 14.6, manut: 1500, seguro: 4200 },
+      { id: "corolla", g: "Sedã", nome: "Toyota Corolla 2.0 flex", preco: 165000, cid: 11.2, est: 13.6, manut: 1800, seguro: 5500 },
+      { id: "tcross", g: "SUV", nome: "Volkswagen T-Cross 1.0 TSI", preco: 150000, cid: 11.8, est: 13.6, manut: 1600, seguro: 5000 },
+      { id: "compass", g: "SUV", nome: "Jeep Compass 1.3 T270", preco: 200000, cid: 10.1, est: 11.9, manut: 2200, seguro: 6500 }
     ],
     hib: [
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Corolla Hybrid", preco: 185000, tipoH: "hev", cid: 18.9, est: 16.5, manut: 1900, seguro: 5900 },
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Corolla Cross Hybrid", preco: 195000, tipoH: "hev", cid: 17.8, est: 15.5, manut: 1900, seguro: 6200 },
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota Yaris Cross Hybrid", preco: 165000, tipoH: "hev", cid: 18.5, est: 16.4, manut: 1800, seguro: 5400 },
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Honda Civic e:HEV", preco: 265000, tipoH: "hev", cid: 21.0, est: 17.5, manut: 2000, seguro: 7800 },
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "Toyota RAV4 Hybrid", preco: 330000, tipoH: "hev", cid: 15.0, est: 13.5, manut: 2300, seguro: 9500 },
-      { g: "Híbrido convencional (HEV) — não carrega na tomada", nome: "GWM Haval H6 HEV", preco: 220000, tipoH: "hev", cid: 14.0, est: 12.5, manut: 1800, seguro: 7000 },
-      { g: "Híbrido leve (MHEV) — economia pequena", nome: "Fiat Pulse Hybrid 1.0", preco: 130000, tipoH: "hev", cid: 12.3, est: 14.0, manut: 1500, seguro: 4500 },
-      { g: "Híbrido leve (MHEV) — economia pequena", nome: "Fiat Fastback Hybrid 1.0", preco: 145000, tipoH: "hev", cid: 12.2, est: 14.0, manut: 1500, seguro: 4800 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD King DM-i", preco: 180000, tipoH: "phev", cid: 16.0, est: 15.0, kmkwhCid: 6.5, kmkwhEst: 5.5, autEle: 80, manut: 1200, seguro: 6000 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Song Pro DM-i", preco: 190000, tipoH: "phev", cid: 14.5, est: 13.5, kmkwhCid: 5.8, kmkwhEst: 5.0, autEle: 71, manut: 1200, seguro: 6800 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Song Plus DM-i", preco: 230000, tipoH: "phev", cid: 14.0, est: 13.0, kmkwhCid: 5.3, kmkwhEst: 4.6, autEle: 80, manut: 1300, seguro: 7600 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "Caoa Chery Tiggo 7 PHEV", preco: 190000, tipoH: "phev", cid: 15.0, est: 14.0, kmkwhCid: 5.5, kmkwhEst: 4.6, autEle: 75, manut: 1500, seguro: 6500 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "GWM Haval H6 PHEV", preco: 260000, tipoH: "phev", cid: 13.0, est: 12.0, kmkwhCid: 5.0, kmkwhEst: 4.3, autEle: 105, manut: 1800, seguro: 8200 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "BYD Shark (picape)", preco: 380000, tipoH: "phev", cid: 11.0, est: 10.0, kmkwhCid: 4.0, kmkwhEst: 3.5, autEle: 60, manut: 1800, seguro: 11000 },
-      { g: "Híbrido plug-in (PHEV) — carrega na tomada", nome: "Volvo XC60 T8", preco: 430000, tipoH: "phev", cid: 12.0, est: 11.0, kmkwhCid: 4.5, kmkwhEst: 3.9, autEle: 55, manut: 2800, seguro: 13000 }
+      { id: "omoda5", g: HEV, nome: "Omoda 5 HEV Luxury", preco: 159990, tipoH: "hev", cid: 15.1, est: 13.2, manut: 1600, seguro: 5800 },
+      { id: "corolla-h", g: HEV, nome: "Toyota Corolla Hybrid", preco: 185000, tipoH: "hev", cid: 18.9, est: 16.5, manut: 1900, seguro: 5900 },
+      { id: "ccross-h", g: HEV, nome: "Toyota Corolla Cross Hybrid", preco: 195000, tipoH: "hev", cid: 17.8, est: 15.5, manut: 1900, seguro: 6200 },
+      { id: "yaris-h", g: HEV, nome: "Toyota Yaris Cross Hybrid", preco: 165000, tipoH: "hev", cid: 18.5, est: 16.4, manut: 1800, seguro: 5400 },
+      { id: "civic-h", g: HEV, nome: "Honda Civic e:HEV", preco: 265000, tipoH: "hev", cid: 21.0, est: 17.5, manut: 2000, seguro: 7800 },
+      { id: "h6-hev", g: HEV, nome: "GWM Haval H6 HEV", preco: 220000, tipoH: "hev", cid: 14.0, est: 12.5, manut: 1800, seguro: 7000 },
+      { id: "pulse-h", g: MHEV, nome: "Fiat Pulse Hybrid 1.0", preco: 130000, tipoH: "hev", cid: 12.3, est: 14.0, manut: 1500, seguro: 4500 },
+      { id: "fastback-h", g: MHEV, nome: "Fiat Fastback Hybrid 1.0", preco: 145000, tipoH: "hev", cid: 12.2, est: 14.0, manut: 1500, seguro: 4800 },
+      { id: "atto2-gl", g: PHEV, nome: "BYD Atto 2 DM-i GL", preco: 149990, tipoH: "phev", cid: 15.8, est: 14.0, kmkwhCid: 5.6, kmkwhEst: 4.9, autEle: 30, manut: 1200, seguro: 5600 },
+      { id: "atto2-gs", g: PHEV, nome: "BYD Atto 2 DM-i GS", preco: 169990, tipoH: "phev", cid: 15.5, est: 13.8, kmkwhCid: 5.5, kmkwhEst: 4.8, autEle: 75, manut: 1200, seguro: 6000 },
+      { id: "king", g: PHEV, nome: "BYD King DM-i", preco: 180000, tipoH: "phev", cid: 16.0, est: 15.0, kmkwhCid: 6.5, kmkwhEst: 5.5, autEle: 80, manut: 1200, seguro: 6000 },
+      { id: "songpro-gs", g: PHEV, nome: "BYD Song Pro DM-i GS", preco: 199990, tipoH: "phev", cid: 17.7, est: 14.6, kmkwhCid: 5.3, kmkwhEst: 4.6, autEle: 72, manut: 1300, seguro: 6800 },
+      { id: "songplus", g: PHEV, nome: "BYD Song Plus DM-i", preco: 230000, tipoH: "phev", cid: 14.0, est: 13.0, kmkwhCid: 5.3, kmkwhEst: 4.6, autEle: 80, manut: 1300, seguro: 7600 },
+      { id: "tiggo7", g: PHEV, nome: "Caoa Chery Tiggo 7 PHEV", preco: 190000, tipoH: "phev", cid: 15.0, est: 14.0, kmkwhCid: 5.5, kmkwhEst: 4.6, autEle: 75, manut: 1500, seguro: 6500 },
+      { id: "h6-phev", g: PHEV, nome: "GWM Haval H6 PHEV", preco: 260000, tipoH: "phev", cid: 13.0, est: 12.0, kmkwhCid: 5.0, kmkwhEst: 4.3, autEle: 105, manut: 1800, seguro: 8200 }
     ],
     ele: [
-      { g: "Compactos e urbanos", nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, aut: 180, manut: 700, seguro: 4000 },
-      { g: "Compactos e urbanos", nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, aut: 280, manut: 700, seguro: 4800 },
-      { g: "Compactos e urbanos", nome: "Caoa Chery iCar", preco: 120000, cid: 7.5, est: 6.2, aut: 280, manut: 700, seguro: 4800 },
-      { g: "Compactos e urbanos", nome: "JAC E-JS1", preco: 130000, cid: 7.7, est: 6.4, aut: 180, manut: 800, seguro: 4800 },
-      { g: "Hatches médios", nome: "BYD Dolphin", preco: 150000, cid: 6.6, est: 5.6, aut: 290, manut: 800, seguro: 5800 },
-      { g: "Hatches médios", nome: "GWM Ora 03", preco: 150000, cid: 6.4, est: 5.4, aut: 230, manut: 800, seguro: 5800 },
-      { g: "Hatches médios", nome: "Fiat 500e", preco: 200000, cid: 7.0, est: 5.8, aut: 227, manut: 900, seguro: 6500 },
-      { g: "SUVs", nome: "Chevrolet Spark EUV", preco: 160000, cid: 6.6, est: 5.4, aut: 258, manut: 800, seguro: 6000 },
-      { g: "SUVs", nome: "BYD Yuan Pro", preco: 190000, cid: 6.3, est: 5.3, aut: 250, manut: 900, seguro: 6800 },
-      { g: "SUVs", nome: "Leapmotor C10", preco: 190000, cid: 6.0, est: 5.0, aut: 338, manut: 900, seguro: 6800 },
-      { g: "SUVs", nome: "Geely EX5", preco: 200000, cid: 6.2, est: 5.1, aut: 335, manut: 900, seguro: 7000 },
-      { g: "SUVs", nome: "Chevrolet Captiva EV", preco: 200000, cid: 6.0, est: 5.0, aut: 304, manut: 900, seguro: 7000 },
-      { g: "SUVs", nome: "Peugeot e-2008", preco: 200000, cid: 6.4, est: 5.3, aut: 261, manut: 1000, seguro: 7000 },
-      { g: "SUVs", nome: "Volvo EX30", preco: 230000, cid: 6.5, est: 5.4, aut: 250, manut: 1000, seguro: 8000 },
-      { g: "SUVs", nome: "BYD Yuan Plus", preco: 235000, cid: 6.0, est: 5.0, aut: 294, manut: 1000, seguro: 8000 },
-      { g: "Sedãs e premium", nome: "Renault Megane E-Tech", preco: 280000, cid: 6.2, est: 5.2, aut: 337, manut: 1100, seguro: 9000 },
-      { g: "Sedãs e premium", nome: "BYD Seal", preco: 300000, cid: 6.2, est: 5.4, aut: 372, manut: 1100, seguro: 10000 },
-      { g: "Sedãs e premium", nome: "BMW iX1", preco: 300000, cid: 5.8, est: 4.9, aut: 314, manut: 1500, seguro: 11000 }
+      { id: "kwid-e", g: "Compactos e urbanos", nome: "Renault Kwid E-Tech", preco: 100000, cid: 8.2, est: 6.8, aut: 180, manut: 700, seguro: 4000 },
+      { id: "dolphin-mini", g: "Compactos e urbanos", nome: "BYD Dolphin Mini", preco: 120000, cid: 8.0, est: 6.6, aut: 280, manut: 700, seguro: 4800 },
+      { id: "ex2", g: "Compactos e urbanos", nome: "Geely EX2 Pro", preco: 124600, cid: 7.9, est: 6.6, aut: 289, manut: 700, seguro: 4800 },
+      { id: "icar", g: "Compactos e urbanos", nome: "Caoa Chery iCar", preco: 120000, cid: 7.5, est: 6.2, aut: 280, manut: 700, seguro: 4800 },
+      { id: "aion-ut", g: "Hatches médios", nome: "GAC Aion UT Premium", preco: 139990, cid: 6.3, est: 5.3, aut: 253, manut: 800, seguro: 5200 },
+      { id: "dolphin-gs", g: "Hatches médios", nome: "BYD Dolphin GS", preco: 149990, cid: 7.0, est: 5.8, aut: 291, manut: 800, seguro: 5600 },
+      { id: "dolphin-se", g: "Hatches médios", nome: "BYD Dolphin SE", preco: 159990, cid: 6.5, est: 5.4, aut: 272, manut: 800, seguro: 5900 },
+      { id: "aion-ut-elite", g: "Hatches médios", nome: "GAC Aion UT Elite", preco: 159990, cid: 5.6, est: 4.6, aut: 310, manut: 800, seguro: 5900 },
+      { id: "ora03", g: "Hatches médios", nome: "GWM Ora 03", preco: 150000, cid: 6.4, est: 5.4, aut: 230, manut: 800, seguro: 5800 },
+      { id: "spark", g: "SUVs", nome: "Chevrolet Spark EUV", preco: 160000, cid: 6.6, est: 5.4, aut: 258, manut: 800, seguro: 6000 },
+      { id: "yuanpro", g: "SUVs", nome: "BYD Yuan Pro", preco: 190000, cid: 6.3, est: 5.3, aut: 250, manut: 900, seguro: 6800 },
+      { id: "ex5", g: "SUVs", nome: "Geely EX5", preco: 200000, cid: 6.2, est: 5.1, aut: 335, manut: 900, seguro: 7000 },
+      { id: "ex30", g: "SUVs", nome: "Volvo EX30", preco: 230000, cid: 6.5, est: 5.4, aut: 250, manut: 1000, seguro: 8000 },
+      { id: "seal", g: "Sedãs e premium", nome: "BYD Seal", preco: 300000, cid: 6.2, est: 5.4, aut: 372, manut: 1100, seguro: 10000 }
     ]
   };
 
-  const TIPOS = [
-    { id: "comb", rotulo: "Combustão", cor: "--car-comb", idx: 0 },
-    { id: "hib", rotulo: "Híbrido", cor: "--car-hib", idx: 1 },
-    { id: "ele", rotulo: "Elétrico", cor: "--car-ele", idx: 2 }
+  // Comparação sugerida (pedido do usuário)
+  const SUGERIDOS = [
+    ["ele", "dolphin-se"], ["ele", "dolphin-gs"], ["ele", "ex2"], ["ele", "aion-ut"],
+    ["hib", "omoda5"], ["hib", "songpro-gs"], ["hib", "atto2-gs"]
   ];
 
+  const TIPOS = {
+    comb: { rotulo: "Combustão", idx: 0 },
+    hib: { rotulo: "Híbrido", idx: 1 },
+    ele: { rotulo: "Elétrico", idx: 2 }
+  };
+  const MAX_CARROS = 8;
   const ETANOL_FATOR = 0.7; // etanol rende ~70% da gasolina em motores flex
 
   // ---------- Utilidades ----------
@@ -385,6 +408,7 @@
   const n1 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
   const precoCurto = (v) => v >= 1e6 ? `~R$ ${n1.format(v / 1e6)} mi` : `~R$ ${n0.format(v / 1e3)} mil`;
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const anosTxt = (n) => `${n} ${n === 1 ? "ano" : "anos"}`;
   function el(tag, attrs, ...children) {
     const e = document.createElement(tag);
     if (attrs) for (const k in attrs) {
@@ -395,8 +419,9 @@
     children.forEach(c => c != null && e.append(c));
     return e;
   }
+  const findPreset = (tipo, id) => PRESETS[tipo].find(p => p.id === id) || null;
 
-  // ---------- Montagem dos formulários ----------
+  // ---------- Formulário global ----------
   const ufSel = $("uf");
   Object.keys(IPVA_UF).forEach(k => ufSel.append(el("option", { value: k, text: k === "OUTRO" ? IPVA_UF[k].nome : `${k} — ${IPVA_UF[k].nome}` })));
   ufSel.value = "SP";
@@ -413,37 +438,52 @@
     i.value = val;
     return i;
   };
+  const getK = (card, k) => card.querySelector(`[data-k="${k}"]`);
+  const setK = (card, k, v) => { const i = getK(card, k); if (i && v != null) i.value = v; };
 
-  const carEls = {};
-  TIPOS.forEach(t => {
-    const card = el("div", { class: "car", style: `--c: var(${t.cor})` });
-    const header = el("header", null, el("span", { class: "dot" }), el("h3", { text: t.rotulo }));
-    card.append(header);
+  // ---------- Cartões de carro ----------
+  const carsBox = $("cars");
+  let uid = 0;
+
+  function slotLivre() {
+    const usados = new Set([...carsBox.children].map(c => +c.dataset.slot));
+    for (let s = 1; s <= MAX_CARROS; s++) if (!usados.has(s)) return s;
+    return 1;
+  }
+
+  function criarCard(tipo, presetId, slot) {
+    const card = el("div", { class: "car" });
+    card.dataset.tipo = tipo;
+    card.dataset.slot = String(slot || slotLivre());
+    card.dataset.uid = String(++uid);
+    card.style.setProperty("--c", `var(--s${card.dataset.slot})`);
+
+    const tipoSel = el("select", { "data-k": "tipo", "aria-label": "Tipo do carro" });
+    Object.entries(TIPOS).forEach(([k, t]) => tipoSel.append(el("option", { value: k, text: t.rotulo })));
+    tipoSel.value = tipo;
+    const rm = el("button", { type: "button", text: "Remover", "aria-label": "Remover este carro" });
+    card.append(el("header", null, el("span", { class: "dot" }), tipoSel, rm));
 
     const g = el("div", { class: "grid" });
     const presetSel = el("select", { "data-k": "preset" });
     presetSel.append(el("option", { value: "", text: "✎ Digitar os dados do meu carro" }));
     const grupos = {};
-    PRESETS[t.id].forEach(p => { if (!grupos[p.g]) { grupos[p.g] = el("optgroup", { label: p.g }); presetSel.append(grupos[p.g]); } });
-    PRESETS[t.id].map((p, i) => [p, i]).sort((a, b) => a[0].preco - b[0].preco).forEach(([p, i]) => {
-      grupos[p.g].append(el("option", { value: String(i), text: `${p.nome} · ${precoCurto(p.preco)}` }));
-    });
-    g.append(field("Escolha o modelo", `${PRESETS[t.id].length} opções`, presetSel, "full"));
+    PRESETS[tipo].forEach(p => { if (!grupos[p.g]) { grupos[p.g] = el("optgroup", { label: p.g }); presetSel.append(grupos[p.g]); } });
+    [...PRESETS[tipo]].sort((a, b) => a.preco - b.preco).forEach(p => grupos[p.g].append(el("option", { value: p.id, text: `${p.nome} · ${precoCurto(p.preco)}` })));
+    g.append(field("Modelo", `${PRESETS[tipo].length} opções`, presetSel, "full"));
     g.append(el("div", { class: "info full", "data-info": "" }));
 
-    const nome = el("input", { type: "text", "data-k": "nome", placeholder: "Ex.: meu carro" });
-    g.append(field("Nome do carro", "", nome, "full"));
+    g.append(field("Nome do carro", "", el("input", { type: "text", "data-k": "nome", placeholder: "Ex.: meu carro" }), "full"));
     g.append(field("Preço", "R$", inNum("preco", 0, 1000)));
-    g.append(field("Alíquota IPVA", "%", inNum("ipva", 0, 0.1, 0, 10)));
+    g.append(field("Alíquota IPVA", "%", inNum("ipva", IPVA_UF[ufSel.value].a[TIPOS[tipo].idx], 0.1, 0, 10)));
 
-    if (t.id === "hib") {
+    if (tipo === "hib") {
       const th = el("select", { "data-k": "tipoH" });
       th.append(el("option", { value: "hev", text: "Convencional ou leve (HEV/MHEV)" }));
       th.append(el("option", { value: "phev", text: "Plug-in (PHEV)" }));
       g.append(field("Tipo de híbrido", "", th, "full"));
     }
-
-    if (t.id !== "ele") {
+    if (tipo !== "ele") {
       const cs = el("select", { "data-k": "comb" });
       [["gasolina", "Gasolina"], ["etanol", "Etanol"], ["diesel", "Diesel"]].forEach(([v, r]) => cs.append(el("option", { value: v, text: r })));
       cs.dataset.prev = "gasolina";
@@ -451,76 +491,84 @@
       g.append(field("Consumo cidade", "km/l", inNum("cid", 0, 0.1, 0.1)));
       g.append(field("Consumo estrada", "km/l", inNum("est", 0, 0.1, 0.1)));
     }
-
-    if (t.id === "hib") {
-      const pe = field("% dos km no modo elétrico", "estimado pela autonomia elétrica e seu trajeto; pode editar", inNum("pctEle", 0, 5, 0, 100), "full phev");
-      g.append(pe);
+    if (tipo === "hib") {
+      g.append(field("% dos km no modo elétrico", "estimado pela autonomia elétrica e seu trajeto; pode editar", inNum("pctEle", 0, 5, 0, 100), "full phev"));
       g.append(field("Autonomia só elétrica", "km", inNum("autEle", 60, 5, 0), "full phev"));
-      g.append(field("Elétrico cidade", "km/kWh", inNum("kmkwhCid", 6, 0.1, 0.1), "phev"));
-      g.append(field("Elétrico estrada", "km/kWh", inNum("kmkwhEst", 5, 0.1, 0.1), "phev"));
+      g.append(field("Elétrico cidade", "km/kWh", inNum("kmkwhCid", 5.5, 0.1, 0.1), "phev"));
+      g.append(field("Elétrico estrada", "km/kWh", inNum("kmkwhEst", 4.8, 0.1, 0.1), "phev"));
     }
-
-    if (t.id === "ele") {
+    if (tipo === "ele") {
       g.append(field("Consumo cidade", "km/kWh", inNum("cid", 0, 0.1, 0.1)));
       g.append(field("Consumo estrada", "km/kWh", inNum("est", 0, 0.1, 0.1)));
     }
-
     g.append(field("Manutenção/ano", "R$ (opcional)", inNum("manut", 0, 100)));
     g.append(field("Seguro/ano", "R$ (opcional)", inNum("seguro", 0, 100)));
-
-    if (t.id !== "ele") {
+    if (tipo !== "ele") {
       g.append(el("p", { class: "hint full", text: "Consumo com o combustível escolhido. Ao trocar entre gasolina e etanol, o consumo é ajustado automaticamente (etanol ≈ 70% da gasolina)." }));
     }
-
     card.append(g);
-    $("cars").append(card);
-    carEls[t.id] = card;
 
-    presetSel.addEventListener("change", () => { if (presetSel.value !== "") aplicarPreset(t, PRESETS[t.id][+presetSel.value]); calcular(); });
+    // Eventos
+    presetSel.addEventListener("change", () => {
+      const p = findPreset(tipo, presetSel.value);
+      if (p) aplicarPreset(card, p);
+      calcular();
+    });
     card.addEventListener("input", (ev) => {
       const k = ev.target.dataset.k;
-      if (k && k !== "preset" && k !== "comb" && k !== "tipoH") presetSel.value = "";
+      if (k && !["preset", "comb", "tipoH", "tipo"].includes(k)) presetSel.value = "";
       if (k === "pctEle") card.dataset.pctManual = "1";
       if (k === "autEle") delete card.dataset.pctManual;
     });
-    const combSel = card.querySelector('[data-k="comb"]');
+    const combSel = getK(card, "comb");
     if (combSel) combSel.addEventListener("change", () => {
       const prev = combSel.dataset.prev, now = combSel.value;
       let f = 1;
       if (prev !== "etanol" && now === "etanol") f = ETANOL_FATOR;
       if (prev === "etanol" && now !== "etanol") f = 1 / ETANOL_FATOR;
-      if (f !== 1) ["cid", "est"].forEach(k => { const i = card.querySelector(`[data-k="${k}"]`); i.value = (num(i) * f).toFixed(1); });
+      if (f !== 1) ["cid", "est"].forEach(k => { const i = getK(card, k); i.value = (num(i) * f).toFixed(1); });
       combSel.dataset.prev = now;
       calcular();
     });
-    const tipoSel = card.querySelector('[data-k="tipoH"]');
-    if (tipoSel) tipoSel.addEventListener("change", () => { atualizarPhev(); calcular(); });
-  });
+    const th = getK(card, "tipoH");
+    if (th) th.addEventListener("change", () => { atualizarPhev(card); calcular(); });
+    tipoSel.addEventListener("change", () => {
+      const novo = criarCard(tipoSel.value, PRESETS[tipoSel.value][0].id, +card.dataset.slot);
+      card.replaceWith(novo);
+      calcular();
+    });
+    rm.addEventListener("click", () => {
+      if (carsBox.children.length <= 1) return;
+      card.remove();
+      calcular();
+    });
 
-  function setK(card, k, v) { const i = card.querySelector(`[data-k="${k}"]`); if (i && v != null) i.value = v; }
-  function getK(card, k) { return card.querySelector(`[data-k="${k}"]`); }
-
-  function aplicarPreset(t, p) {
-    const c = carEls[t.id];
-    setK(c, "nome", p.nome); setK(c, "preco", p.preco);
-    setK(c, "manut", p.manut); setK(c, "seguro", p.seguro);
-    if (t.id === "hib") {
-      setK(c, "tipoH", p.tipoH);
-      if (p.tipoH === "phev") { setK(c, "kmkwhCid", p.kmkwhCid); setK(c, "kmkwhEst", p.kmkwhEst); setK(c, "autEle", p.autEle); }
-      delete c.dataset.pctManual;
+    if (presetId) {
+      const p = findPreset(tipo, presetId);
+      if (p) { presetSel.value = p.id; aplicarPreset(card, p); }
     }
-    if (t.id !== "ele") {
-      const combSel = getK(c, "comb");
-      combSel.value = "gasolina"; combSel.dataset.prev = "gasolina";
-    }
-    setK(c, "cid", p.cid); setK(c, "est", p.est);
-    atualizarPhev();
+    atualizarPhev(card);
+    return card;
   }
 
-  function atualizarPhev() {
-    const c = carEls.hib;
-    const isPhev = getK(c, "tipoH").value === "phev";
-    c.querySelectorAll(".phev").forEach(e => e.classList.toggle("hide", !isPhev));
+  function aplicarPreset(card, p) {
+    const tipo = card.dataset.tipo;
+    setK(card, "nome", p.nome); setK(card, "preco", p.preco);
+    setK(card, "manut", p.manut); setK(card, "seguro", p.seguro);
+    if (tipo === "hib") {
+      setK(card, "tipoH", p.tipoH);
+      if (p.tipoH === "phev") { setK(card, "kmkwhCid", p.kmkwhCid); setK(card, "kmkwhEst", p.kmkwhEst); setK(card, "autEle", p.autEle); }
+      delete card.dataset.pctManual;
+    }
+    if (tipo !== "ele") { const cs = getK(card, "comb"); cs.value = "gasolina"; cs.dataset.prev = "gasolina"; }
+    setK(card, "cid", p.cid); setK(card, "est", p.est);
+    atualizarPhev(card);
+  }
+
+  function atualizarPhev(card) {
+    const th = getK(card, "tipoH");
+    const isPhev = th && th.value === "phev";
+    card.querySelectorAll(".phev").forEach(e => e.classList.toggle("hide", !isPhev));
   }
 
   // % dos km em modo elétrico para um PHEV carregado todo dia: cobre o trajeto diário até ~90% da autonomia elétrica.
@@ -530,35 +578,35 @@
     return Math.round(Math.min(kmDia, autEle * 0.9) * dias / kmMes * 100);
   }
 
-  function atualizarInfo() {
-    TIPOS.forEach(t => {
-      const c = carEls[t.id], box = c.querySelector("[data-info]");
-      const sel = getK(c, "preset");
-      const p = sel.value !== "" ? PRESETS[t.id][+sel.value] : null;
-      const chips = [];
-      if (t.id === "hib") {
-        const phev = getK(c, "tipoH").value === "phev";
-        if (phev) {
-          const aut = num(getK(c, "autEle"));
-          if (!c.dataset.pctManual) setK(c, "pctEle", estimarPctEle(aut));
-          chips.push("Plug-in: carrega na tomada");
-          if (aut > 0) chips.push(`${n0.format(aut)} km só no elétrico`);
-          chips.push(`${n0.format(num(getK(c, "pctEle")))}% do seu trajeto no elétrico`);
-        } else {
-          chips.push(p && /MHEV/.test(p.g) ? "Híbrido leve: não roda só no elétrico" : "Recarrega sozinho, não vai na tomada");
-        }
+  function atualizarInfo(card) {
+    const tipo = card.dataset.tipo, box = card.querySelector("[data-info]");
+    const p = findPreset(tipo, getK(card, "preset").value);
+    const chips = [];
+    if (tipo === "hib") {
+      if (getK(card, "tipoH").value === "phev") {
+        const aut = num(getK(card, "autEle"));
+        if (!card.dataset.pctManual) setK(card, "pctEle", estimarPctEle(aut));
+        chips.push("Plug-in: carrega na tomada");
+        if (aut > 0) chips.push(`${n0.format(aut)} km só no elétrico`);
+        chips.push(`${n0.format(num(getK(card, "pctEle")))}% do seu trajeto no elétrico`);
+      } else {
+        chips.push(p && p.g === MHEV ? "Híbrido leve: não roda só no elétrico" : "Recarrega sozinho, não vai na tomada");
       }
-      if (t.id === "ele" && p) chips.push(`Autonomia ≈ ${n0.format(p.aut)} km`);
-      if (p) chips.push(`Preço ≈ ${brl.format(p.preco)}`);
-      else chips.push("Dados digitados por você");
-      box.textContent = "";
-      chips.forEach(txt => box.append(el("span", { text: txt })));
-    });
+    }
+    if (tipo === "ele" && p) chips.push(`Autonomia Inmetro ≈ ${n0.format(p.aut)} km`);
+    chips.push(p ? `Preço ≈ ${brl.format(p.preco)}` : "Dados digitados por você");
+    box.textContent = "";
+    chips.forEach(txt => box.append(el("span", { text: txt })));
   }
 
   function aplicarIpvaUF() {
     const a = IPVA_UF[ufSel.value].a;
-    TIPOS.forEach(t => setK(carEls[t.id], "ipva", a[t.idx]));
+    [...carsBox.children].forEach(c => setK(c, "ipva", a[TIPOS[c.dataset.tipo].idx]));
+  }
+
+  function carregarSugeridos() {
+    carsBox.textContent = "";
+    SUGERIDOS.forEach(([t, id], i) => carsBox.append(criarCard(t, id, i + 1)));
   }
 
   // ---------- Cálculo ----------
@@ -578,36 +626,31 @@
     return g;
   }
 
-  function litros(km, pctCid, cid, est) {
+  function porConsumo(km, pctCid, cid, est) {
     if (km <= 0) return 0;
-    const kc = km * pctCid, ke = km * (1 - pctCid);
-    return (cid > 0 ? kc / cid : 0) + (est > 0 ? ke / est : 0);
+    return (cid > 0 ? km * pctCid / cid : 0) + (est > 0 ? km * (1 - pctCid) / est : 0);
   }
 
-  function calcCarro(t, g) {
-    const c = carEls[t.id];
-    const v = (k) => { const i = getK(c, k); return i ? num(i) : 0; };
-    const nome = getK(c, "nome").value.trim() || t.rotulo;
-    const preco = v("preco");
-    const aliq = v("ipva") / 100;
-    let custoEnergiaAno = 0, litrosAno = 0, kwhAno = 0, detalheEnergia = "";
+  function calcCarro(card, g) {
+    const tipo = card.dataset.tipo;
+    const v = (k) => { const i = getK(card, k); return i ? num(i) : 0; };
+    const nome = getK(card, "nome").value.trim() || TIPOS[tipo].rotulo;
+    const preco = v("preco"), aliq = v("ipva") / 100;
+    let litrosAno = 0, kwhAno = 0, custoEnergiaAno;
 
-    if (t.id === "comb" || t.id === "hib") {
-      const comb = getK(c, "comb").value;
-      let kmComb = g.kmAno;
-      if (t.id === "hib" && getK(c, "tipoH").value === "phev") {
-        const pe = Math.min(100, Math.max(0, v("pctEle"))) / 100;
-        const kmEle = g.kmAno * pe;
-        kmComb = g.kmAno - kmEle;
-        kwhAno = litros(kmEle, g.pctCidade, v("kmkwhCid"), v("kmkwhEst")) * (1 + g.perdas);
-      }
-      litrosAno = litros(kmComb, g.pctCidade, v("cid"), v("est"));
-      custoEnergiaAno = litrosAno * g.preco[comb] + kwhAno * g.kwhPreco;
-      detalheEnergia = comb;
-    } else {
-      kwhAno = litros(g.kmAno, g.pctCidade, v("cid"), v("est")) * (1 + g.perdas);
+    if (tipo === "ele") {
+      kwhAno = porConsumo(g.kmAno, g.pctCidade, v("cid"), v("est")) * (1 + g.perdas);
       custoEnergiaAno = kwhAno * g.kwhPreco;
-      detalheEnergia = "eletricidade";
+    } else {
+      const comb = getK(card, "comb").value;
+      let kmComb = g.kmAno;
+      if (tipo === "hib" && getK(card, "tipoH").value === "phev") {
+        const kmEle = g.kmAno * Math.min(100, Math.max(0, v("pctEle"))) / 100;
+        kmComb = g.kmAno - kmEle;
+        kwhAno = porConsumo(kmEle, g.pctCidade, v("kmkwhCid"), v("kmkwhEst")) * (1 + g.perdas);
+      }
+      litrosAno = porConsumo(kmComb, g.pctCidade, v("cid"), v("est"));
+      custoEnergiaAno = litrosAno * g.preco[comb] + kwhAno * g.kwhPreco;
     }
 
     const manut = v("manut"), seguro = v("seguro");
@@ -616,16 +659,15 @@
     for (let y = 0; y < g.anos; y++) {
       const ipva = preco * Math.pow(1 - g.deprec, y) * aliq;
       ipvaTotal += ipva;
-      anos.push({ ipva, energia: custoEnergiaAno, manut, seguro, total: ipva + custoEnergiaAno + manut + seguro });
+      anos.push({ total: ipva + custoEnergiaAno + manut + seguro });
     }
     const energiaTotal = custoEnergiaAno * g.anos;
-    const manutTotal = manut * g.anos, seguroTotal = seguro * g.anos;
-    const operacional = ipvaTotal + energiaTotal + manutTotal + seguroTotal;
+    const operacional = ipvaTotal + energiaTotal + (manut + seguro) * g.anos;
     const kmTotal = g.kmAno * g.anos;
     return {
-      t, nome, preco, aliq, anos, litrosAno, kwhAno, detalheEnergia,
-      ipvaAno1: anos[0].ipva, ipvaTotal, energiaMes: custoEnergiaAno / 12, energiaAno: custoEnergiaAno, energiaTotal,
-      manutTotal, seguroTotal, operacional,
+      tipo, rotulo: TIPOS[tipo].rotulo, cor: `--s${card.dataset.slot}`, nome, preco, aliq, anos, litrosAno, kwhAno,
+      ipvaAno1: anos[0].ipva ?? preco * aliq, ipvaTotal, energiaMes: custoEnergiaAno / 12, energiaAno: custoEnergiaAno, energiaTotal,
+      manutTotal: manut * g.anos, seguroTotal: seguro * g.anos, operacional,
       mensal: operacional / (g.anos * 12),
       porKm: kmTotal > 0 ? operacional / kmTotal : 0,
       energiaKm: g.kmAno > 0 ? custoEnergiaAno / g.kmAno : 0,
@@ -634,28 +676,34 @@
   }
 
   // ---------- Renderização ----------
-  function render(g, rs) {
-    $("kmResumo").textContent = `Você roda cerca de ${n0.format(g.kmMes)} km/mês (${n0.format(g.kmAno)} km/ano), ${Math.round(g.pctCidade * 100)}% na cidade. Energia elétrica média: ${brl2.format(g.kwhPreco)}/kWh. Período: ${g.anos} ${g.anos === 1 ? "ano" : "anos"}.`;
+  function dotEl(cor) { return el("span", { class: "dot", style: `--c: var(${cor})` }); }
 
-    const minOp = Math.min(...rs.map(r => r.operacional));
+  function render(g, rs) {
+    $("kmResumo").textContent = `Você roda cerca de ${n0.format(g.kmMes)} km/mês (${n0.format(g.kmAno)} km/ano), ${Math.round(g.pctCidade * 100)}% na cidade. Energia elétrica média: ${brl2.format(g.kwhPreco)}/kWh. Período: ${anosTxt(g.anos)}.`;
+    $("carCount").textContent = `${rs.length} de ${MAX_CARROS} carros`;
+    $("addCar").disabled = rs.length >= MAX_CARROS;
+
+    const ord = [...rs].sort((a, b) => a.operacional - b.operacional);
+    const minOp = ord[0].operacional;
 
     // Cards
     const s = $("summary"); s.textContent = "";
-    rs.forEach(r => {
-      const card = el("div", { class: "sum", style: `--c: var(${r.t.cor})` });
-      if (r.operacional === minOp) card.append(el("span", { class: "badge", text: "Menor custo de uso" }));
-      card.append(el("div", { class: "name" }, el("span", { class: "dot" }), el("span", { text: r.nome })));
-      card.append(el("div", { class: "type", text: r.t.rotulo }));
+    ord.forEach((r, i) => {
+      const card = el("div", { class: "sum" });
+      if (i === 0) card.append(el("span", { class: "badge", text: "Menor custo de uso" }));
+      else card.append(el("div", { class: "rank", text: `${i + 1}º lugar · +${brl.format(r.mensal - ord[0].mensal)}/mês` }));
+      card.append(el("div", { class: "name" }, dotEl(r.cor), el("span", { text: r.nome })));
+      card.append(el("div", { class: "type", text: r.rotulo }));
       const big = el("div", { class: "big" }, brl.format(r.mensal), " ");
       big.append(el("small", { text: "/mês" }));
       card.append(big);
       const dl = el("dl");
-      const add = (a, b) => { dl.append(el("dt", { text: a }), el("dd", { text: b })); };
-      add(r.t.id === "ele" ? "Energia por mês" : "Combustível/energia por mês", brl.format(r.energiaMes));
+      const add = (a, b) => dl.append(el("dt", { text: a }), el("dd", { text: b }));
+      add(r.tipo === "ele" ? "Energia por mês" : "Combustível/energia por mês", brl.format(r.energiaMes));
       add("Custo de energia por km", brl2.format(r.energiaKm));
-      add("IPVA no 1º ano", brl.format(r.ipvaAno1) + ` (${n1.format(r.aliq * 100)}%)`);
+      add("IPVA no 1º ano", `${brl.format(r.preco * r.aliq)} (${n1.format(r.aliq * 100)}%)`);
       add("Custo total por km", brl2.format(r.porKm));
-      add(`Total de uso em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}`, brl.format(r.operacional));
+      add(`Total de uso em ${anosTxt(g.anos)}`, brl.format(r.operacional));
       if (r.litrosAno > 0) add("Litros por ano", n0.format(r.litrosAno) + " L");
       if (r.kwhAno > 0) add("kWh por ano", n0.format(r.kwhAno) + " kWh");
       card.append(dl);
@@ -664,82 +712,98 @@
 
     // Barra fixa (celular)
     const bar = $("bar"); bar.textContent = "";
-    rs.forEach(r => {
+    ord.forEach(r => {
       const d = el("div");
-      d.append(el("span", { class: "n", style: `--c: var(${r.t.cor})` }, el("span", { class: "dot" }), el("span", { text: r.t.rotulo })));
+      d.append(el("span", { class: "n" }, dotEl(r.cor), el("span", { text: r.nome })));
       d.append(el("b", { class: r.operacional === minOp ? "best" : "", text: brl.format(r.mensal) }));
       d.append(el("small", { text: "por mês" }));
       bar.append(d);
     });
 
-    // Tabela
+    // Tabela (uma linha por carro)
     const tb = $("tabela"); tb.textContent = "";
-    const thead = el("thead"), tr = el("tr");
-    tr.append(el("th", { text: `Em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}` }));
-    rs.forEach(r => tr.append(el("th", { text: r.nome })));
-    thead.append(tr); tb.append(thead);
-    const tbody = el("tbody");
-    const linhas = [
+    const cols = [
       ["Combustível / energia", r => r.energiaTotal],
       ["IPVA", r => r.ipvaTotal],
       ["Manutenção", r => r.manutTotal],
       ["Seguro", r => r.seguroTotal],
-      ["Total de uso", r => r.operacional, "total"],
-      ["Custo por mês", r => r.mensal],
+      ["Total de uso", r => r.operacional, true],
+      ["Por mês", r => r.mensal],
       ["Preço de compra", r => r.preco],
-      ["Compra + uso", r => r.comCompra, "total"]
+      ["Compra + uso", r => r.comCompra, true]
     ];
-    linhas.forEach(([rot, f, cls]) => {
-      const row = el("tr", cls ? { class: cls } : null);
-      row.append(el("td", { text: rot }));
-      const vals = rs.map(f);
-      const mn = Math.min(...vals);
-      vals.forEach(v => row.append(el("td", { class: (v === mn && vals.some(x => x !== mn)) ? "best" : "", text: brl.format(v) })));
-      tbody.append(row);
+    const htr = el("tr", null, el("th", { text: `Em ${anosTxt(g.anos)}` }));
+    cols.forEach(([rot]) => htr.append(el("th", { text: rot })));
+    tb.append(el("thead", null, htr));
+    const mins = cols.map(([, f]) => Math.min(...rs.map(f)));
+    const varia = cols.map(([, f]) => rs.some(r => f(r) !== f(rs[0])));
+    const tbody = el("tbody");
+    ord.forEach(r => {
+      const tr = el("tr");
+      tr.append(el("td", null, dotEl(r.cor), el("span", { text: `${r.nome} (${r.rotulo})` })));
+      cols.forEach(([, f, tot], i) => {
+        const v = f(r);
+        const cls = [tot ? "total" : "", varia[i] && v === mins[i] ? "best" : ""].join(" ").trim();
+        tr.append(el("td", { class: cls, text: brl.format(v) }));
+      });
+      tbody.append(tr);
     });
     tb.append(tbody);
 
     renderChart(g, rs);
-    renderInsights(g, rs);
+    renderInsights(g, rs, ord);
   }
 
-  function renderInsights(g, rs) {
+  function renderInsights(g, rs, ord) {
     const ul = $("insights"); ul.textContent = "";
     const li = (t) => ul.append(el("li", { text: t }));
-    const ord = [...rs].sort((a, b) => a.operacional - b.operacional);
-    li(`Menor custo de uso: ${ord[0].nome} (${ord[0].t.rotulo}), com ${brl.format(ord[0].mensal)}/mês — ${brl.format(ord[ord.length - 1].operacional - ord[0].operacional)} a menos que o ${ord[ord.length - 1].nome} em ${g.anos} ${g.anos === 1 ? "ano" : "anos"}.`);
+    const ult = ord[ord.length - 1];
+    li(`Menor custo de uso: ${ord[0].nome} (${ord[0].rotulo}), com ${brl.format(ord[0].mensal)}/mês. São ${brl.format(ult.operacional - ord[0].operacional)} a menos que o ${ult.nome}, o mais caro de usar, em ${anosTxt(g.anos)}.`);
 
     const ordC = [...rs].sort((a, b) => a.comCompra - b.comCompra);
-    li(`Considerando também o preço de compra, o mais vantajoso no período é ${ordC[0].nome} (${brl.format(ordC[0].comCompra)} no total).`);
+    li(`Somando o preço de compra, o mais vantajoso em ${anosTxt(g.anos)} é o ${ordC[0].nome} (${brl.format(ordC[0].comCompra)} no total).`);
 
-    // Payback em relação ao carro a combustão
-    const base = rs.find(r => r.t.id === "comb");
-    rs.filter(r => r !== base).forEach(r => {
+    // Melhor de cada tipo
+    const melhor = {};
+    ord.forEach(r => { if (!melhor[r.tipo]) melhor[r.tipo] = r; });
+    if (melhor.ele && melhor.hib) {
+      const d = melhor.hib.mensal - melhor.ele.mensal;
+      li(`Entre os tipos: o elétrico mais econômico (${melhor.ele.nome}) custa ${brl.format(Math.abs(d))}/mês ${d >= 0 ? "a menos" : "a mais"} que o híbrido mais econômico (${melhor.hib.nome}).`);
+    }
+    if (melhor.comb) {
+      const outros = ["ele", "hib"].filter(t => melhor[t]).map(t => `${melhor[t].nome}: ${brl.format(melhor.comb.mensal - melhor[t].mensal)}/mês`);
+      if (outros.length) li(`Economia em relação ao carro a combustão ${melhor.comb.nome}: ${outros.join("; ")}.`);
+    }
+
+    // Payback em relação ao carro mais barato de comprar
+    const base = [...rs].sort((a, b) => a.preco - b.preco)[0];
+    const maisCaros = rs.filter(r => r !== base && r.preco > base.preco).sort((a, b) => a.preco - b.preco);
+    const compensam = maisCaros.filter(r => r.operacional < base.operacional);
+    if (maisCaros.length && !compensam.length) {
+      li(`O ${base.nome} é o mais barato de comprar e também de usar: nenhum carro mais caro recupera a diferença de preço com economia no uso.`);
+    }
+    compensam.forEach(r => {
       const difPreco = r.preco - base.preco;
       const econAno = (base.operacional - r.operacional) / g.anos;
-      if (difPreco <= 0 && econAno >= 0) li(`${r.nome} custa menos para comprar e para usar do que o ${base.nome}: vantagem desde o primeiro dia.`);
-      else if (difPreco > 0 && econAno > 0) {
-        const anos = difPreco / econAno;
-        li(`${r.nome} custa ${brl.format(difPreco)} a mais que o ${base.nome}, mas economiza ~${brl.format(econAno)}/ano no uso: a diferença se paga em ~${n1.format(anos)} ${anos < 2 ? "ano" : "anos"} (${n0.format(anos * g.kmAno)} km)${anos > g.anos ? ", depois do período simulado" : ""}.`);
-      } else if (difPreco > 0 && econAno <= 0) li(`${r.nome} é mais caro para comprar e para usar do que o ${base.nome} com estes dados.`);
-      else li(`${r.nome} é ${brl.format(-difPreco)} mais barato para comprar, mas custa ~${brl.format(-econAno)}/ano a mais no uso que o ${base.nome}.`);
+      const anos = difPreco / econAno;
+      li(`${r.nome} custa ${brl.format(difPreco)} a mais que o ${base.nome} e economiza ~${brl.format(econAno)}/ano no uso: a diferença se paga em ~${n1.format(anos)} ${anos < 2 ? "ano" : "anos"}${anos > g.anos ? ", depois do período simulado" : ""}.`);
     });
 
-    const ipvaDif = Math.max(...rs.map(r => r.ipvaTotal)) - Math.min(...rs.map(r => r.ipvaTotal));
+    const ipvas = rs.map(r => r.ipvaTotal);
+    const ipvaDif = Math.max(...ipvas) - Math.min(...ipvas);
     if (ipvaDif > 0) li(`Só no IPVA, a diferença entre o maior e o menor valor no período é de ${brl.format(ipvaDif)}.`);
   }
 
   // ---------- Gráfico (SVG) ----------
   const NS = "http://www.w3.org/2000/svg";
   const sv = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
-  let chartState = null;
 
   function renderChart(g, rs) {
     const incluir = $("incluirCompra").checked;
-    const svg = $("chart");
-    const box = $("chartBox");
-    const W = Math.max(300, box.clientWidth), H = 320;
-    const m = { t: 16, r: 16 + Math.min(150, W * 0.28), b: 32, l: 72 };
+    const svg = $("chart"), box = $("chartBox");
+    const W = Math.max(300, box.clientWidth), H = 360;
+    const estreito = W < 560; // no celular: sem rótulos no fim das linhas (legenda, dica e tabela mostram os valores)
+    const m = { t: 16, r: estreito ? 12 : 16 + Math.min(150, W * 0.3), b: 32, l: estreito ? 56 : 64 };
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("height", String(H));
     svg.textContent = "";
@@ -755,38 +819,45 @@
     const x = (i) => m.l + (i / g.anos) * (W - m.l - m.r);
     const y = (v) => m.t + (1 - (v - nice.min) / (nice.max - nice.min)) * (H - m.t - m.b);
 
-    // Grade e eixo Y
     for (let v = nice.min; v <= nice.max + 1e-6; v += nice.step) {
       svg.append(sv("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: cssVar("--grid"), "stroke-width": 1 }));
       const t = sv("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" });
-      t.textContent = abrev(v);
+      t.textContent = estreito ? abrev(v).replace("R$ ", "") : abrev(v);
       svg.append(t);
     }
-    // Eixo X
     const passo = g.anos > 10 ? 2 : 1;
     for (let i = 0; i <= g.anos; i += passo) {
       const t = sv("text", { x: x(i), y: H - m.b + 18, "text-anchor": "middle" });
-      t.textContent = i === 0 ? (incluir ? "compra" : "0") : `ano ${i}`;
+      t.textContent = estreito ? (i === 0 ? (incluir ? "compra" : "0") : `${i}º`) : (i === 0 ? (incluir ? "compra" : "0") : `ano ${i}`);
+      if (estreito && i === 0) t.setAttribute("text-anchor", "start");
       svg.append(t);
     }
 
-    // Linhas
     series.forEach(s => {
-      const cor = cssVar(s.r.t.cor);
       const d = s.pts.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-      svg.append(sv("path", { d, fill: "none", stroke: cor, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      svg.append(sv("path", { d, fill: "none", stroke: cssVar(s.r.cor), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
     });
 
-    // Rótulos diretos no fim das linhas (evita sobreposição)
+    // Rótulos diretos no fim das linhas, afastados para não sobrepor
+    const gap = 30;
     const fim = series.map(s => ({ s, y: y(s.pts[s.pts.length - 1]) })).sort((a, b) => a.y - b.y);
-    for (let i = 1; i < fim.length; i++) if (fim[i].y - fim[i - 1].y < 28) fim[i].y = fim[i - 1].y + 28;
+    for (let i = 1; i < fim.length; i++) if (fim[i].y - fim[i - 1].y < gap) fim[i].y = fim[i - 1].y + gap;
+    const limite = H - m.b - 6;
+    if (fim.length && fim[fim.length - 1].y > limite) {
+      fim[fim.length - 1].y = limite;
+      for (let i = fim.length - 2; i >= 0; i--) if (fim[i + 1].y - fim[i].y < gap) fim[i].y = fim[i + 1].y - gap;
+    }
+    const xe = x(g.anos);
     fim.forEach(f => {
-      const cor = cssVar(f.s.r.t.cor);
-      const xe = x(g.anos);
+      const cor = cssVar(f.s.r.cor);
+      if (estreito) {
+        svg.append(sv("circle", { cx: xe, cy: y(f.s.pts[f.s.pts.length - 1]), r: 4, fill: cor, stroke: cssVar("--surface-1"), "stroke-width": 2 }));
+        return;
+      }
       svg.append(sv("circle", { cx: xe, cy: y(f.s.pts[f.s.pts.length - 1]), r: 4, fill: cor, stroke: cssVar("--surface-1"), "stroke-width": 2 }));
-      const t1 = sv("text", { x: xe + 10, y: f.y - 1, style: `fill: var(--text-primary); font-weight: 600` });
-      t1.textContent = trunc(f.s.r.nome, Math.floor(m.r / 7));
-      const t2 = sv("text", { x: xe + 10, y: f.y + 13 });
+      const t1 = sv("text", { x: xe + 10, y: f.y - 1, style: "fill: var(--text-primary); font-weight: 600" });
+      t1.textContent = trunc(f.s.r.nome, Math.floor((m.r - 14) / 6.2));
+      const t2 = sv("text", { x: xe + 10, y: f.y + 12 });
       t2.textContent = brl.format(f.s.pts[f.s.pts.length - 1]);
       svg.append(t1, t2);
     });
@@ -794,39 +865,34 @@
     // Camada de hover
     const cross = sv("line", { y1: m.t, y2: H - m.b, stroke: cssVar("--text-muted"), "stroke-width": 1, "stroke-dasharray": "3 3", visibility: "hidden" });
     svg.append(cross);
-    const dots = series.map(s => { const c = sv("circle", { r: 4, fill: cssVar(s.r.t.cor), stroke: cssVar("--surface-1"), "stroke-width": 2, visibility: "hidden" }); svg.append(c); return c; });
+    const dots = series.map(s => { const c = sv("circle", { r: 4, fill: cssVar(s.r.cor), stroke: cssVar("--surface-1"), "stroke-width": 2, visibility: "hidden" }); svg.append(c); return c; });
     const hit = sv("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent", tabindex: "0" });
     svg.append(hit);
 
-    chartState = { g, series, x, y, m, W, cross, dots, incluir };
-
-    // Legenda
     const lg = $("legend"); lg.textContent = "";
-    series.forEach(s => lg.append(el("span", { style: `--c: var(${s.r.t.cor})` }, el("i"), document.createTextNode(`${s.r.nome} (${s.r.t.rotulo})`))));
+    series.forEach(s => lg.append(el("span", { style: `--c: var(${s.r.cor})` }, el("i"), document.createTextNode(`${s.r.nome} (${s.r.rotulo})`))));
 
+    const tip = $("tip");
     const mostrar = (i) => {
-      const st = chartState, tip = $("tip");
-      cross.setAttribute("x1", st.x(i)); cross.setAttribute("x2", st.x(i)); cross.setAttribute("visibility", "visible");
-      st.series.forEach((s, k) => { dots[k].setAttribute("cx", st.x(i)); dots[k].setAttribute("cy", st.y(s.pts[i])); dots[k].setAttribute("visibility", "visible"); });
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      series.forEach((s, k) => { dots[k].setAttribute("cx", x(i)); dots[k].setAttribute("cy", y(s.pts[i])); dots[k].setAttribute("visibility", "visible"); });
       tip.textContent = "";
-      tip.append(el("div", { class: "t", text: i === 0 ? (st.incluir ? "Na compra" : "Início") : `Acumulado até o ano ${i}` }));
-      [...st.series].sort((a, b) => b.pts[i] - a.pts[i]).forEach(s => {
-        tip.append(el("div", { class: "r", style: `--c: var(${s.r.t.cor})` }, el("span", null, el("i"), document.createTextNode(s.r.nome)), el("b", { text: brl.format(s.pts[i]) })));
+      tip.append(el("div", { class: "t", text: i === 0 ? (incluir ? "Na compra" : "Início") : `Acumulado até o ano ${i}` }));
+      [...series].sort((a, b) => b.pts[i] - a.pts[i]).forEach(s => {
+        tip.append(el("div", { class: "r", style: `--c: var(${s.r.cor})` }, el("span", null, el("i"), document.createTextNode(s.r.nome)), el("b", { text: brl.format(s.pts[i]) })));
       });
       tip.classList.remove("hide");
-      const bw = $("chartBox").clientWidth, scale = bw / st.W;
-      const px = st.x(i) * scale;
-      const tw = tip.offsetWidth;
-      tip.style.left = (px + 12 + tw > bw ? px - tw - 12 : px + 12) + "px";
+      const bw = box.clientWidth, px = x(i) * (bw / W), tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, px + 12 + tw > bw ? px - tw - 12 : px + 12) + "px";
       tip.style.top = "8px";
     };
-    const esconder = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); $("tip").classList.add("hide"); };
+    const esconder = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); tip.classList.add("hide"); };
     let atual = g.anos;
     hit.addEventListener("pointermove", (ev) => {
       const rect = svg.getBoundingClientRect();
       const sx = (ev.clientX - rect.left) * (W / rect.width);
-      const i = Math.max(0, Math.min(g.anos, Math.round((sx - m.l) / (W - m.l - m.r) * g.anos)));
-      atual = i; mostrar(i);
+      atual = Math.max(0, Math.min(g.anos, Math.round((sx - m.l) / (W - m.l - m.r) * g.anos)));
+      mostrar(atual);
     });
     hit.addEventListener("pointerleave", esconder);
     hit.addEventListener("focus", () => mostrar(atual));
@@ -839,8 +905,7 @@
 
   function niceScale(min, max, ticks) {
     const range = max - min || 1;
-    const raw = range / ticks;
-    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const mag = Math.pow(10, Math.floor(Math.log10(range / ticks)));
     const step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(s => range / s <= ticks) || 10 * mag;
     return { min: Math.floor(min / step) * step, max: Math.ceil(max / step) * step, step };
   }
@@ -852,12 +917,16 @@
   function trunc(s, n) { return s.length > n ? s.slice(0, Math.max(3, n - 1)) + "…" : s; }
 
   // ---------- Persistência local (conveniência) ----------
-  const STORE = "comparador-carros-v2";
+  const STORE = "comparador-carros-v3";
   function salvar() {
     try {
-      const data = { global: {}, cars: {} };
+      const data = { global: {}, cars: [] };
       document.querySelectorAll("section.card input[id], section.card select[id]").forEach(i => { data.global[i.id] = i.type === "checkbox" ? i.checked : i.value; });
-      TIPOS.forEach(t => { data.cars[t.id] = {}; carEls[t.id].querySelectorAll("[data-k]").forEach(i => { data.cars[t.id][i.dataset.k] = i.value; }); data.cars[t.id]._manual = carEls[t.id].dataset.pctManual || ""; });
+      [...carsBox.children].forEach(c => {
+        const d = { tipo: c.dataset.tipo, slot: c.dataset.slot, manual: c.dataset.pctManual || "", campos: {} };
+        c.querySelectorAll("[data-k]").forEach(i => { if (i.dataset.k !== "tipo") d.campos[i.dataset.k] = i.value; });
+        data.cars.push(d);
+      });
       localStorage.setItem(STORE, JSON.stringify(data));
     } catch (e) { /* armazenamento indisponível */ }
   }
@@ -866,37 +935,43 @@
       const raw = localStorage.getItem(STORE);
       if (!raw) return false;
       const data = JSON.parse(raw);
+      if (!Array.isArray(data.cars) || !data.cars.length) return false;
       Object.entries(data.global || {}).forEach(([id, v]) => { const i = $(id); if (i) { if (i.type === "checkbox") i.checked = !!v; else i.value = v; } });
-      TIPOS.forEach(t => Object.entries((data.cars || {})[t.id] || {}).forEach(([k, v]) => {
-        if (k === "_manual") { if (v) carEls[t.id].dataset.pctManual = "1"; return; }
-        const i = getK(carEls[t.id], k); if (i) { i.value = v; if (k === "comb") i.dataset.prev = v; }
-      }));
-      return true;
+      carsBox.textContent = "";
+      data.cars.slice(0, MAX_CARROS).forEach(d => {
+        if (!TIPOS[d.tipo]) return;
+        const card = criarCard(d.tipo, null, +d.slot || slotLivre());
+        Object.entries(d.campos || {}).forEach(([k, v]) => { const i = getK(card, k); if (i) { i.value = v; if (k === "comb") i.dataset.prev = v; } });
+        if (d.manual) card.dataset.pctManual = "1";
+        atualizarPhev(card);
+        carsBox.append(card);
+      });
+      return carsBox.children.length > 0;
     } catch (e) { return false; }
   }
 
   // ---------- Ciclo ----------
   function calcular() {
-    atualizarInfo();
+    const cards = [...carsBox.children];
+    cards.forEach(atualizarInfo);
     const g = ler();
-    const rs = TIPOS.map(t => calcCarro(t, g));
-    render(g, rs);
+    render(g, cards.map(c => calcCarro(c, g)));
     salvar();
   }
 
-  if (!restaurar()) {
-    const padrao = { comb: "Toyota Corolla 2.0 flex", hib: "Toyota Corolla Cross Hybrid", ele: "BYD Dolphin" };
-    TIPOS.forEach(t => {
-      const i = PRESETS[t.id].findIndex(p => p.nome === padrao[t.id]);
-      getK(carEls[t.id], "preset").value = String(i); aplicarPreset(t, PRESETS[t.id][i]);
-    });
-    aplicarIpvaUF();
-  }
-  atualizarPhev();
+  if (!restaurar()) carregarSugeridos();
 
+  $("addCar").addEventListener("click", () => {
+    if (carsBox.children.length >= MAX_CARROS) return;
+    const card = criarCard("comb", "tcross");
+    carsBox.append(card);
+    calcular();
+    card.scrollIntoView({ block: "nearest" });
+  });
+  $("resetCars").addEventListener("click", () => { carregarSugeridos(); calcular(); });
   ufSel.addEventListener("change", () => { aplicarIpvaUF(); calcular(); });
   document.addEventListener("input", (ev) => { if (ev.target.matches("input")) calcular(); });
-  document.addEventListener("change", (ev) => { if (ev.target.matches("select[data-k=tipoH], #incluirCompra")) calcular(); });
+  document.addEventListener("change", (ev) => { if (ev.target.matches("#incluirCompra")) calcular(); });
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(calcular, 120); });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", calcular);
 
