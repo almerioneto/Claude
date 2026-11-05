@@ -27,3 +27,9 @@ Os dados ficam salvos no navegador para a próxima visita.
 
 > Valores de exemplo e alíquotas de IPVA são aproximados — confira a tabela FIPE, o consumo do
 > Inmetro (PBEV) e a Sefaz do seu estado.
+
+## Exportar PDF
+
+O botão **Exportar PDF** (seção Resultado) gera, no próprio navegador, um PDF com as premissas,
+o ranking, o detalhamento, o gráfico do custo acumulado, as conclusões e os dados de cada carro.
+Usa o jsPDF 2.5.1 carregado sob demanda do cdnjs (precisa de internet no primeiro clique).

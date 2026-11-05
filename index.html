@@ -133,6 +133,11 @@
   .sum dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 10px 0 0; font-size: 0.88rem; }
   .sum dt { color: var(--text-secondary); }
   .sum dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .res-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .res-head h2 { margin: 0; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .6; cursor: progress; }
+  #pdfMsg:empty { display: none; }
   .badge {
     display: inline-block; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;
     color: var(--good); background: var(--good-bg); padding: 2px 8px; border-radius: 999px;
@@ -281,7 +286,11 @@
 
   <!-- 3. Resultado -->
   <section class="card">
-    <h2 id="resultado"><span class="step">3</span>Resultado</h2>
+    <div class="res-head">
+      <h2 id="resultado"><span class="step">3</span>Resultado</h2>
+      <button type="button" id="btnPdf" class="primary">Exportar PDF</button>
+    </div>
+    <p class="hint" id="pdfMsg" role="status" style="margin:-4px 0 12px"></p>
     <p class="hint" id="kmResumo" style="margin:0 0 16px"></p>
     <div class="summary" id="summary"></div>
   </section>
@@ -953,13 +962,246 @@
   }
 
   // ---------- Ciclo ----------
+  let ultimo = null;
   function calcular() {
     const cards = [...carsBox.children];
     cards.forEach(atualizarInfo);
     const g = ler();
-    render(g, cards.map(c => calcCarro(c, g)));
+    const rs = cards.map(c => calcCarro(c, g));
+    ultimo = { g, rs };
+    render(g, rs);
     salvar();
   }
+
+  // ---------- Exportar PDF ----------
+  // Cores das séries no papel (sempre a versão clara da paleta)
+  const COR_PDF = { 1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a", 4: "#eda100", 5: "#e87ba4", 6: "#008300", 7: "#6250d6", 8: "#e34948" };
+  const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  let jspdfPromise = null;
+  function carregarJsPDF() {
+    if (window.jspdf) return Promise.resolve(window.jspdf);
+    if (!jspdfPromise) jspdfPromise = new Promise((ok, erro) => {
+      const sc = document.createElement("script");
+      sc.src = JSPDF_URL; sc.async = true;
+      sc.onload = () => window.jspdf ? ok(window.jspdf) : erro(new Error("jsPDF"));
+      sc.onerror = () => { jspdfPromise = null; erro(new Error("jsPDF")); };
+      document.head.appendChild(sc);
+    });
+    return jspdfPromise;
+  }
+  // As fontes padrão do PDF cobrem acentos do português, mas não alguns símbolos.
+  const pt = (s) => String(s).replace(/[\u2014\u2013]/g, "-").replace(/\u2248/g, "~").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\u2026/g, "...").replace(/[^\x00-\xff]/g, "");
+  const hexRgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+  function gerarPDF(jspdf, g, rs) {
+    const doc = new jspdf.jsPDF({ unit: "mm", format: "a4" });
+    const W = 210, M = 14, CW = W - 2 * M, ALT = 297;
+    let y = M;
+    const ord = [...rs].sort((a, b) => a.operacional - b.operacional);
+    const tinta = [11, 11, 11], cinza = [82, 81, 78], claro = [122, 121, 115], linha = [221, 219, 211];
+    const txt = (s, x, yy, o) => doc.text(pt(s), x, yy, o);
+    const quebra = (h) => { if (y + h > ALT - 16) { doc.addPage(); y = M; } };
+
+    // Cabeçalho
+    doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(...tinta);
+    txt("Comparativo de custos de carros", M, y + 6); y += 10;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...claro);
+    txt(`Gerado em ${new Date().toLocaleDateString("pt-BR")} · ${rs.length} carros · período de ${anosTxt(g.anos)}`, M, y + 3); y += 9;
+
+    // Premissas
+    const uf = IPVA_UF[ufSel.value] ? IPVA_UF[ufSel.value].nome : ufSel.value;
+    const prem = [
+      ["Estado (IPVA)", uf],
+      ["Rodagem", `${n0.format(g.kmMes)} km/mês (${n0.format(g.kmAno)} km/ano), ${Math.round(g.pctCidade * 100)}% na cidade`],
+      ["Combustível", `gasolina ${brl2.format(g.preco.gasolina)}/l · etanol ${brl2.format(g.preco.etanol)}/l · diesel ${brl2.format(g.preco.diesel)}/l`],
+      ["Energia", `${Math.round(g.pctCasa * 100)}% em casa a ${brl2.format(g.pCasa)}/kWh · ${Math.round((1 - g.pctCasa) * 100)}% pública a ${brl2.format(g.pPublica)}/kWh · média ${brl2.format(g.kwhPreco)}/kWh · perdas ${n0.format(g.perdas * 100)}%`],
+      ["IPVA", `desvalorização de ${n0.format(g.deprec * 100)}% ao ano na base de cálculo`]
+    ];
+    doc.setFillColor(239, 238, 233);
+    doc.roundedRect(M, y, CW, prem.length * 5.2 + 5, 2, 2, "F");
+    let py = y + 6;
+    doc.setFontSize(8.5);
+    prem.forEach(([k, v]) => {
+      doc.setFont("helvetica", "bold"); doc.setTextColor(...cinza); txt(k, M + 4, py);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(...tinta); txt(v, M + 32, py);
+      py += 5.2;
+    });
+    y += prem.length * 5.2 + 11;
+
+    // Tabela genérica
+    function tabela(titulo, cols, linhas, opts) {
+      opts = opts || {};
+      quebra(18);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(...tinta);
+      txt(titulo, M, y + 4); y += 8;
+      const larg = cols.map(c => c.w * CW);
+      const head = () => {
+        doc.setFont("helvetica", "bold"); doc.setFontSize(7.6); doc.setTextColor(...cinza);
+        let x = M;
+        cols.forEach((c, i) => { txt(c.t, c.dir ? x + larg[i] - 1.5 : x + (i === 0 ? 0 : 1.5), y + 3.5, c.dir ? { align: "right" } : undefined); x += larg[i]; });
+        y += 5.5;
+        doc.setDrawColor(...linha); doc.setLineWidth(0.3); doc.line(M, y, M + CW, y);
+      };
+      head();
+      linhas.forEach((ln, li) => {
+        if (y + 7 > ALT - 16) { doc.addPage(); y = M; head(); }
+        const h = 6.6;
+        let x = M;
+        ln.cells.forEach((v, i) => {
+          const c = cols[i];
+          const destaque = ln.best && ln.best[i];
+          doc.setFont("helvetica", destaque || c.bold ? "bold" : "normal"); doc.setFontSize(8.2);
+          doc.setTextColor(...(destaque ? [12, 122, 62] : tinta));
+          if (i === 0 && ln.cor) {
+            doc.setFillColor(...hexRgb(ln.cor)); doc.circle(x + 1.4, y + h / 2, 1.2, "F");
+            const s = pt(v); const max = larg[0] - 5;
+            let t = s; while (doc.getTextWidth(t) > max && t.length > 4) t = t.slice(0, -1);
+            doc.text(t === s ? s : t.slice(0, -1) + "...", x + 4, y + h / 2 + 1.1);
+          } else {
+            txt(v, c.dir ? x + larg[i] - 1.5 : x + 1.5, y + h / 2 + 1.1, c.dir ? { align: "right" } : undefined);
+          }
+          x += larg[i];
+        });
+        y += h;
+        doc.setDrawColor(...linha); doc.line(M, y, M + CW, y);
+      });
+      y += 7;
+    }
+    const melhores = (fs) => fs.map(f => { if (!f) return null; const v = rs.map(f); return Math.min(...v); });
+
+    // 1) Ranking
+    const fR = [null, null, r => r.preco, r => r.energiaMes, r => r.preco * r.aliq, r => r.mensal, r => r.comCompra];
+    const mR = melhores(fR);
+    tabela(`Ranking pelo custo de uso (${anosTxt(g.anos)})`, [
+      { t: "Carro", w: 0.30 }, { t: "Tipo", w: 0.10 }, { t: "Preço", w: 0.11, dir: true },
+      { t: "Energia/mês", w: 0.12, dir: true }, { t: "IPVA 1º ano", w: 0.12, dir: true },
+      { t: "Uso/mês", w: 0.12, dir: true, bold: true }, { t: "Compra + uso", w: 0.13, dir: true, bold: true }
+    ], ord.map((r, i) => ({
+      cor: COR_PDF[r.cor.replace("--s", "")],
+      cells: [`${i + 1}. ${r.nome}`, r.rotulo, brl.format(r.preco), brl.format(r.energiaMes), brl.format(r.preco * r.aliq), brl.format(r.mensal), brl.format(r.comCompra)],
+      best: fR.map((f, k) => f && f(r) === mR[k] && rs.some(o => f(o) !== f(r)))
+    })));
+
+    // 2) Detalhamento
+    const fD = [r => r.energiaTotal, r => r.ipvaTotal, r => r.manutTotal, r => r.seguroTotal, r => r.operacional, r => r.porKm];
+    const mD = melhores([null, ...fD]);
+    tabela(`Detalhamento do custo de uso em ${anosTxt(g.anos)}`, [
+      { t: "Carro", w: 0.30 }, { t: "Combustível/energia", w: 0.14, dir: true }, { t: "IPVA", w: 0.11, dir: true },
+      { t: "Manutenção", w: 0.11, dir: true }, { t: "Seguro", w: 0.11, dir: true }, { t: "Total de uso", w: 0.13, dir: true, bold: true },
+      { t: "Por km", w: 0.10, dir: true }
+    ], ord.map(r => ({
+      cor: COR_PDF[r.cor.replace("--s", "")],
+      cells: [r.nome, brl.format(r.energiaTotal), brl.format(r.ipvaTotal), brl.format(r.manutTotal), brl.format(r.seguroTotal), brl.format(r.operacional), brl2.format(r.porKm)],
+      best: [null, ...fD].map((f, k) => f && f(r) === mD[k] && rs.some(o => f(o) !== f(r)))
+    })));
+
+    // 3) Gráfico do custo acumulado (compra + uso)
+    const incluir = $("incluirCompra").checked;
+    const gh = 78;
+    quebra(gh + 26);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(...tinta);
+    txt(incluir ? "Custo acumulado (compra + uso)" : "Custo de uso acumulado", M, y + 4); y += 8;
+    const series = rs.map(r => { const pts = [incluir ? r.preco : 0]; r.anos.forEach((a, i) => pts.push(pts[i] + a.total)); return { r, pts }; });
+    const maxV = Math.max(1, ...series.flatMap(s => s.pts));
+    const minV = incluir ? Math.min(...series.map(s => s.pts[0])) * 0.9 : 0;
+    const nice = niceScale(minV, maxV, 5);
+    const gl = M + 16, gr = M + CW - 2, gt = y, gb = y + gh;
+    const gx = (i) => gl + (i / g.anos) * (gr - gl);
+    const gy = (v) => gb - (v - nice.min) / (nice.max - nice.min) * (gb - gt);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...claro);
+    doc.setLineWidth(0.2); doc.setDrawColor(230, 228, 221);
+    for (let v = nice.min; v <= nice.max + 1e-6; v += nice.step) { doc.line(gl, gy(v), gr, gy(v)); txt(abrev(v), gl - 2, gy(v) + 1, { align: "right" }); }
+    for (let i = 0; i <= g.anos; i += (g.anos > 10 ? 2 : 1)) txt(i === 0 ? (incluir ? "compra" : "0") : `ano ${i}`, gx(i), gb + 4.5, { align: "center" });
+    doc.setLineWidth(0.6);
+    series.forEach(s => {
+      const c = hexRgb(COR_PDF[s.r.cor.replace("--s", "")]);
+      doc.setDrawColor(...c);
+      for (let i = 1; i < s.pts.length; i++) doc.line(gx(i - 1), gy(s.pts[i - 1]), gx(i), gy(s.pts[i]));
+      doc.setFillColor(...c); doc.circle(gx(g.anos), gy(s.pts[s.pts.length - 1]), 0.9, "F");
+    });
+    y = gb + 9;
+    // Legenda
+    doc.setFontSize(7.6); let lx = M;
+    [...series].sort((a, b) => a.pts[a.pts.length - 1] - b.pts[b.pts.length - 1]).forEach(s => {
+      const rot = pt(`${s.r.nome}: ${brl.format(s.pts[s.pts.length - 1])}`);
+      const w = doc.getTextWidth(rot) + 9;
+      if (lx + w > M + CW) { lx = M; y += 5; }
+      doc.setDrawColor(...hexRgb(COR_PDF[s.r.cor.replace("--s", "")])); doc.setLineWidth(0.8); doc.line(lx, y - 1, lx + 4, y - 1);
+      doc.setTextColor(...cinza); doc.text(rot, lx + 5.5, y);
+      lx += w;
+    });
+    y += 9;
+
+    // 4) Conclusões
+    quebra(20);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(...tinta);
+    txt("Conclusões", M, y + 4); y += 9;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.8); doc.setTextColor(...tinta);
+    [...document.querySelectorAll("#insights li")].forEach(li => {
+      const ls = doc.splitTextToSize(pt(li.textContent), CW - 5);
+      quebra(ls.length * 4.3 + 2);
+      doc.setFillColor(...cinza); doc.circle(M + 1, y - 1.1, 0.7, "F");
+      doc.text(ls, M + 4, y); y += ls.length * 4.3 + 1.8;
+    });
+    y += 4;
+
+    // 5) Dados de cada carro
+    const cards = [...carsBox.children];
+    tabela("Dados usados para cada carro", [
+      { t: "Carro", w: 0.30 }, { t: "Tipo", w: 0.16 }, { t: "Consumo cidade / estrada", w: 0.26 },
+      { t: "Alíquota IPVA", w: 0.12, dir: true }, { t: "Manut. + seguro/ano", w: 0.16, dir: true }
+    ], rs.map((r, i) => {
+      const c = cards[i], v = (k) => num(getK(c, k));
+      let tipo = r.rotulo, cons;
+      if (r.tipo === "ele") cons = `${n1.format(v("cid"))} / ${n1.format(v("est"))} km/kWh`;
+      else {
+        cons = `${n1.format(v("cid"))} / ${n1.format(v("est"))} km/l (${getK(c, "comb").value})`;
+        if (r.tipo === "hib" && getK(c, "tipoH").value === "phev") { tipo = "Híbrido plug-in"; cons += ` · ${n0.format(v("pctEle"))}% elétrico`; }
+      }
+      return { cor: COR_PDF[r.cor.replace("--s", "")], cells: [r.nome, tipo, cons, `${n1.format(r.aliq * 100)}%`, brl.format(v("manut") + v("seguro"))] };
+    }));
+
+    // Rodapé em todas as páginas
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...claro);
+      const nota = doc.splitTextToSize(pt("Estimativa simplificada: não considera financiamento, valor de revenda, troca de bateria ou variação futura de preços. Preços de lançamento e consumo Inmetro/PBEV aproximados; confira a versão exata, a alíquota na Sefaz e as tarifas da sua região."), CW - 20);
+      doc.text(nota, M, ALT - 10);
+      doc.text(`${i}/${total}`, M + CW, ALT - 10, { align: "right" });
+    }
+    return doc;
+  }
+
+  async function exportarPDF() {
+    const btn = $("btnPdf"), msg = $("pdfMsg");
+    if (!ultimo) return;
+    btn.disabled = true; msg.textContent = "Gerando o PDF...";
+    try {
+      const jspdf = await carregarJsPDF();
+      const doc = gerarPDF(jspdf, ultimo.g, ultimo.rs);
+      const nome = `comparativo-carros-${new Date().toISOString().slice(0, 10)}.pdf`;
+      if (window.claude && typeof window.claude.use === "function") {
+        const downloads = await window.claude.use("downloads");
+        if (!downloads) { msg.textContent = "Não foi possível salvar arquivos nesta visualização. Abra a página no navegador ou no app do Claude e tente de novo."; return; }
+        try {
+          await downloads.save({ filename: nome, data: doc.output("blob") });
+          msg.textContent = "PDF salvo.";
+        } catch (e) {
+          const c = e && e.code;
+          msg.textContent = c === "declined" ? "Exportação cancelada." : c === "rate_limited" ? "Já existe uma confirmação aberta. Responda a ela ou tente de novo em instantes." : "Não foi possível salvar o PDF aqui.";
+        }
+      } else {
+        doc.save(nome);
+        msg.textContent = "PDF salvo.";
+      }
+    } catch (e) {
+      msg.textContent = "Não foi possível carregar o gerador de PDF. Verifique a conexão e tente de novo.";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  $("btnPdf").addEventListener("click", exportarPDF);
 
   if (!restaurar()) carregarSugeridos();
 
